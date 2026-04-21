@@ -1,7 +1,7 @@
 # ⚡ DigiPET
 <p align="center">
-	<a href="https://github.com/hellzerg/optimizerNXT" target="_blank">
-   		<img src="https://raw.githubusercontent.com/hellzerg/optimizer/master/new-optimizerNXT.png">
+	<a href="https://github.com/sl4vuk/Proyecto-DigiPEt" target="_blank">
+   		<img src="https://github.com/sl4vuk/Proyecto-DigiPEt/blob/main/public/d3538367-1c42-42cc-a8f1-cd365bc9c9d9.png?raw=true">
 	</a>
 </p>
 

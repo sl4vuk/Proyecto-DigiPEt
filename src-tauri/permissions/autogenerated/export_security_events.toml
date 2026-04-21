@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-export-security-events"
+description = "Enables the export_security_events command without any pre-configured scope."
+commands.allow = ["export_security_events"]
+
+[[permission]]
+identifier = "deny-export-security-events"
+description = "Denies the export_security_events command without any pre-configured scope."
+commands.deny = ["export_security_events"]

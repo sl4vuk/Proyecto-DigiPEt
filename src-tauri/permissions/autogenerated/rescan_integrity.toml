@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-rescan-integrity"
+description = "Enables the rescan_integrity command without any pre-configured scope."
+commands.allow = ["rescan_integrity"]
+
+[[permission]]
+identifier = "deny-rescan-integrity"
+description = "Denies the rescan_integrity command without any pre-configured scope."
+commands.deny = ["rescan_integrity"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-register-camera-event"
+description = "Enables the register_camera_event command without any pre-configured scope."
+commands.allow = ["register_camera_event"]
+
+[[permission]]
+identifier = "deny-register-camera-event"
+description = "Denies the register_camera_event command without any pre-configured scope."
+commands.deny = ["register_camera_event"]

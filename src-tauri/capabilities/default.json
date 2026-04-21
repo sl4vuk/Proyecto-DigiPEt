@@ -1,0 +1,31 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-capability",
+  "description": "Permisos mínimos de escritorio y diálogo para la ventana principal.",
+  "windows": ["main"],
+  "platforms": ["windows", "linux", "macOS"],
+  "permissions": [
+    "core:path:default",
+    "core:event:default",
+    "core:window:default",
+    "core:app:default",
+    "core:resources:default",
+    "allow-bootstrap",
+    "allow-setup-master-pin",
+    "allow-unlock-session",
+    "allow-lock-session",
+    "allow-hydrate-state",
+    "allow-add-protected-item",
+    "allow-remove-protected-items",
+    "allow-set-items-locked",
+    "allow-rescan-integrity",
+    "allow-update-security-settings",
+    "allow-rotate-pin",
+    "allow-register-camera-event",
+    "allow-trigger-emergency-lock",
+    "allow-export-security-events",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-message"
+  ]
+}

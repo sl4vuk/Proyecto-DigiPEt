@@ -1,9 +1,9 @@
 {
-  "name": "aegis-vault-desktop",
+  "name": "digipet-desktop",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Aplicacion de escritorio premium de seguridad de archivos con Tauri 2, React y Rust.",
+  "description": "Aplicación de escritorio DigiPET para seguridad local de archivos, monitoreo y núcleo seguro con Tauri 2, React y Rust.",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

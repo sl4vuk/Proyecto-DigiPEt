@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
-  "productName": "Aegis Vault",
+  "productName": "DigiPET",
   "version": "0.1.0",
-  "identifier": "com.aegisvault.desktop",
+  "identifier": "com.digipet.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Aegis Vault",
+        "title": "DigiPET",
         "width": 1540,
         "height": 980,
         "minWidth": 1200,
@@ -30,8 +30,8 @@
   "bundle": {
     "active": true,
     "targets": ["msi", "nsis"],
-    "shortDescription": "Plataforma premium de seguridad de archivos para escritorio.",
-    "longDescription": "Aplicación de seguridad de archivos y carpetas para escritorio, reconstruida con Tauri 2, React y Rust con arquitectura modular, auditoría local y contenedor cifrado.",
+    "shortDescription": "Plataforma DigiPET de monitoreo y seguridad local para escritorio.",
+    "longDescription": "DigiPET es una aplicación de escritorio con Tauri 2, React y Rust para proteger archivos, auditar eventos locales, monitorear integridad y operar un núcleo seguro con identidad visual propia.",
     "windows": {
       "digestAlgorithm": "sha256",
       "wix": {

@@ -19,28 +19,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aegis_vault"
-version = "0.1.0"
-dependencies = [
- "aes-gcm",
- "argon2",
- "base64 0.22.1",
- "chrono",
- "directories",
- "rand 0.8.6",
- "serde",
- "serde_json",
- "sha2",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "thiserror 2.0.18",
- "uuid",
- "walkdir",
- "zeroize",
-]
-
-[[package]]
 name = "aes"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -664,6 +642,28 @@ dependencies = [
  "block-buffer",
  "crypto-common",
  "subtle",
+]
+
+[[package]]
+name = "digipet"
+version = "0.1.0"
+dependencies = [
+ "aes-gcm",
+ "argon2",
+ "base64 0.22.1",
+ "chrono",
+ "directories",
+ "rand 0.8.6",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "thiserror 2.0.18",
+ "uuid",
+ "walkdir",
+ "zeroize",
 ]
 
 [[package]]

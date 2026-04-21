@@ -56,12 +56,12 @@ export function UnlockGate() {
           </div>
 
           <h1 className="mt-8 text-[clamp(2.4rem,6vw,4.6rem)] font-semibold leading-[1.02] tracking-tight">
-            Seguridad premium para archivos y carpetas críticos.
+            DigiPET protege archivos, monitorea eventos y mantiene la sesión segura.
           </h1>
           <p className="mt-5 max-w-xl text-base leading-8 text-[var(--text-soft)]">
-            Aegis Vault reconstruye el flujo de protección, auditoría e integridad sobre una
-            arquitectura moderna y lista para producción. El módulo de cámara queda desacoplado y
-            preparado para integrar biometría o gestos sin contaminar el núcleo seguro.
+            DigiPET organiza la protección local, la auditoría y la integridad en una arquitectura
+            moderna, modular y lista para crecer. El módulo de cámara permanece desacoplado y
+            preparado para evolucionar hacia detección visual, biometría o gestos.
           </p>
 
           <div className="mt-10 grid gap-4 md:grid-cols-2">

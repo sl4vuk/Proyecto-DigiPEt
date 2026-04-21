@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Este documento describe la arquitectura objetivo y convenciones del proyecto Aegis Vault, una suite desktop de seguridad de archivos construida sobre Tauri 2.
+Este documento describe la arquitectura objetivo y convenciones del proyecto DigiPET, una aplicación desktop de seguridad, monitoreo local y gestión segura de archivos construida sobre Tauri 2.
 
 ## Principios
 

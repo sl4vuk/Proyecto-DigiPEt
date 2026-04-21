@@ -33,9 +33,9 @@ export function Sidebar() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--text-soft)]">
-              Aegis Vault
+                DigiPET
             </p>
-            <h1 className="text-xl font-semibold tracking-tight">Desktop Security Suite</h1>
+            <h1 className="text-xl font-semibold tracking-tight">Secure Desktop Companion</h1>
           </div>
         </div>
 

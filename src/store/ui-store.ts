@@ -11,7 +11,7 @@ interface UiState {
   clearToasts: () => void;
 }
 
-const STORAGE_KEY = "aegis-vault.theme";
+const STORAGE_KEY = "digipet.theme";
 
 function resolveStoredTheme(): ThemeMode {
   if (typeof window === "undefined") return "dark";

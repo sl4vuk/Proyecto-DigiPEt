@@ -17,7 +17,7 @@ set "LOG_FILE=%LOG_DIR%\dependencies-%STAMP%.log"
 
 (
   echo ===============================================================
-  echo AEGIS VAULT DEPENDENCY SETUP
+  echo DIGIPET DEPENDENCY SETUP
   echo DATE: %DATE% %TIME%
   echo ROOT: %ROOT%
   echo ===============================================================

@@ -1,7 +1,7 @@
 [package]
-name = "aegis_vault"
+name = "digipet"
 version = "0.1.0"
-description = "Aegis Vault desktop security suite"
+description = "DigiPET desktop secure monitoring suite"
 authors = ["OpenAI"]
 edition = "2021"
 rust-version = "1.77.2"

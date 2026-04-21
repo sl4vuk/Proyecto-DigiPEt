@@ -22,7 +22,7 @@ export function TopBar() {
   const pushToast = useUiStore((state) => state.pushToast);
 
   const unreadCritical = hydrated?.events.filter((event) => event.severity === "critical").length ?? 0;
-  const title = titles[location.pathname] ?? "Aegis Vault";
+  const title = titles[location.pathname] ?? "DigiPET";
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

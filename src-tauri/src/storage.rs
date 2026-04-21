@@ -22,7 +22,7 @@ pub struct StoragePaths {
 
 impl StoragePaths {
     pub fn new() -> Result<Self, AppError> {
-        let project = ProjectDirs::from("com", "AegisVault", "AegisVault").ok_or_else(|| {
+        let project = ProjectDirs::from("com", "DigiPET", "DigiPET").ok_or_else(|| {
             AppError::context("storage::new", "No se pudo resolver el directorio de la aplicación.")
         })?;
 
@@ -81,7 +81,7 @@ pub fn export_events(
 ) -> Result<PathBuf, AppError> {
     let target = destination.unwrap_or_else(|| {
         paths.exports_dir.join(format!(
-            "aegis-vault-security-events-{}.json",
+            "digipet-security-events-{}.json",
             Utc::now().format("%Y%m%d-%H%M%S")
         ))
     });

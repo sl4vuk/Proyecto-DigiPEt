@@ -91,8 +91,8 @@ export async function pickDirectory() {
 
 export async function pickExportDestination() {
   return save({
-    title: "Exportar historial de seguridad",
-    defaultPath: "aegis-vault-security-events.json",
+    title: "Exportar historial de DigiPET",
+    defaultPath: "digipet-security-events.json",
     filters: [
       {
         name: "JSON",

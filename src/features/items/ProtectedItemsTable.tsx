@@ -62,7 +62,7 @@ export function ProtectedItemsTable({
       <EmptyState
         icon={FolderLock}
         title="Todavía no hay activos protegidos"
-        description="Agrega archivos o carpetas desde el panel superior y Aegis Vault registrará su estado, huella de integridad y política de bloqueo."
+        description="Agrega archivos o carpetas desde el panel superior y DigiPET registrará su estado, huella de integridad y política de bloqueo."
       />
     );
   }

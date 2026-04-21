@@ -14,7 +14,7 @@ call :ensure_runtime_path
 :menu
 cls
 echo ===============================================================
-echo                 AEGIS VAULT - DEV CONSOLE
+echo                   DIGIPET - DEV CONSOLE
 echo ===============================================================
 echo Proyecto: %ROOT%
 echo Logs:     %LOG_DIR%

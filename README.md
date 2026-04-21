@@ -1,4 +1,9 @@
 # ⚡ DigiPET
+<p align="center">
+	<a href="https://github.com/hellzerg/optimizerNXT" target="_blank">
+   		<img src="https://raw.githubusercontent.com/hellzerg/optimizer/master/new-optimizerNXT.png">
+	</a>
+</p>
 
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=for-the-badge&logo=github&color=%230567ff)](https://github.com/sl4vuk/Proyecto-DigiPEt/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows-informational?style=for-the-badge&logo=windows&color=%230078d4)](https://github.com/sl4vuk/Proyecto-DigiPEt)

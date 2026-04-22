@@ -10,7 +10,7 @@
 [![Tauri](https://img.shields.io/badge/Tauri-2.x-blueviolet?style=for-the-badge&logo=tauri)](https://tauri.app/)
 [![Rust](https://img.shields.io/badge/Rust-Secure%20Core-orange?style=for-the-badge&logo=rust)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
-[![Telegram](https://img.shields.io/badge/Telegram-Canal%20Oficial-blue?style=for-the-badge&logo=telegram)](https://t.me/TU_CANAL_AQUI)
+[![Web Oficial](https://img.shields.io/badge/Web-Oficial-blue?style=for-the-badge&logo=wechat&logoColor=white)](https://digipet-sentinel.lovable.app)
 
 > DigiPET es una aplicación de escritorio para protección local de archivos, monitoreo seguro, auditoría e integridad, construida con **Tauri 2**, **React 19**, **TypeScript 5**, **Vite** y un núcleo en **Rust**.
 
@@ -154,11 +154,11 @@ DigiPET
 
 ## 📬 Comunidad y Soporte
 
-[![Telegram](https://img.shields.io/badge/Únete%20al%20Canal-Telegram-blue?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/TU_CANAL_AQUI)
+[![Web Oficial](https://img.shields.io/badge/Visita%20nuestra-Web%20Oficial-blue?style=for-the-badge&logo=wechat&logoColor=white)](https://digipet-sentinel.lovable.app)
 [![GitHub Issues](https://img.shields.io/badge/Reportar%20Bug-GitHub%20Issues-red?style=for-the-badge&logo=github)](https://github.com/sl4vuk/Proyecto-DigiPEt/issues)
 [![GitHub Discussions](https://img.shields.io/badge/Preguntas-Discussions-blueviolet?style=for-the-badge&logo=github)](https://github.com/sl4vuk/Proyecto-DigiPEt/discussions)
 
-- 💬 Para preguntas rápidas úsate el canal de **Telegram**
+- 🌐 Visita nuestra **[Web Oficial](https://digipet-sentinel.lovable.app)** para más información
 - 🐛 Para bugs y sugerencias, abre un **Issue** en GitHub
 - ⭐ Si el proyecto te es útil, deja una **estrella** en el repositorio
 

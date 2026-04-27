@@ -28,7 +28,9 @@ fn main() {
             commands::rotate_pin,
             commands::register_camera_event,
             commands::trigger_emergency_lock,
-            commands::export_security_events
+            commands::export_security_events,
+            commands::terminal_status,
+            commands::run_terminal_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

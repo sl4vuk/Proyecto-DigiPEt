@@ -122,3 +122,17 @@ export interface RegisterCameraEventInput {
   detectedGesture?: string;
   suspectedIntrusion?: boolean;
 }
+
+export interface TerminalStatus {
+  available: boolean;
+  mode: "stub" | "ready";
+  requiresWhitelist: boolean;
+  message: string;
+  allowlist: string[];
+}
+
+export interface TerminalCommandResult {
+  ok: boolean;
+  command: string;
+  output: string;
+}

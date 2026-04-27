@@ -17,16 +17,16 @@ export function StatCard({
   tone = "info"
 }: StatCardProps) {
   return (
-    <div className="border border-[var(--border)] bg-[var(--panel-strong)] p-5">
+    <div className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-5 shadow-[var(--shadow-soft)]">
       <div className="flex items-start justify-between gap-4">
-        <div className="grid h-12 w-12 place-items-center border border-[var(--border)] bg-[var(--field)] text-[var(--text)]">
-          <Icon className="h-5 w-5" />
+        <div className="grid size-12 place-items-center rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] text-[var(--text)]">
+          <Icon aria-hidden="true" className="h-5 w-5" />
         </div>
         <Badge variant={tone}>{label}</Badge>
       </div>
       <div className="mt-6">
-        <p className="text-3xl font-semibold tracking-tight">{value}</p>
-        <p className="mt-2 text-sm text-[var(--text-soft)]">{helper}</p>
+        <p className="text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
+        <p className="mt-2 text-pretty text-sm text-[var(--text-soft)]">{helper}</p>
       </div>
     </div>
   );

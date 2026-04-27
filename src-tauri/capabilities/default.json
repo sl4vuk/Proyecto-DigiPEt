@@ -24,6 +24,8 @@
     "allow-register-camera-event",
     "allow-trigger-emergency-lock",
     "allow-export-security-events",
+    "allow-terminal-status",
+    "allow-run-terminal-command",
     "dialog:allow-open",
     "dialog:allow-save",
     "dialog:allow-message"

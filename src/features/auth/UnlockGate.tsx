@@ -47,18 +47,18 @@ export function UnlockGate() {
   }
 
   return (
-    <div className="grid min-h-screen grid-cols-1 bg-[var(--bg)] text-[var(--text)] lg:grid-cols-[1.15fr_0.85fr]">
-      <div className="border-b border-[var(--border)] p-8 lg:border-b-0 lg:border-r lg:p-12">
+    <div className="grid min-h-dvh grid-cols-1 bg-[var(--bg)] text-[var(--text)] lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="border-b border-[var(--border)] p-6 lg:border-b-0 lg:border-r lg:p-10 xl:p-12">
         <div className="relative max-w-xl">
-          <div className="inline-flex items-center gap-3 border border-[var(--border)] bg-[var(--panel)] px-4 py-2 text-sm text-[var(--text-soft)]">
-            <ShieldCheck className="h-4 w-4 text-[var(--text)]" />
+          <div className="inline-flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--panel)] px-4 py-2 text-sm text-[var(--text-soft)] shadow-[var(--shadow-soft)]">
+            <ShieldCheck aria-hidden="true" className="h-4 w-4 text-[var(--text)]" />
             Núcleo local con cifrado fuerte y sesión efímera
           </div>
 
-          <h1 className="mt-8 text-[clamp(2.4rem,6vw,4.6rem)] font-semibold leading-[1.02] tracking-tight">
+          <h1 className="mt-8 text-balance text-[clamp(2.35rem,6vw,4.6rem)] font-semibold leading-[1.02] tracking-tight">
             DigiPET protege archivos, monitorea eventos y mantiene la sesión segura.
           </h1>
-          <p className="mt-5 max-w-xl text-base leading-8 text-[var(--text-soft)]">
+          <p className="mt-5 max-w-xl text-pretty text-base leading-8 text-[var(--text-soft)]">
             DigiPET organiza la protección local, la auditoría y la integridad en una arquitectura
             moderna, modular y lista para crecer. El módulo de cámara permanece desacoplado y
             preparado para evolucionar hacia detección visual, biometría o gestos.
@@ -89,16 +89,16 @@ export function UnlockGate() {
         </div>
       </div>
 
-      <div className="grid place-items-center p-8 lg:p-12">
+      <div className="grid place-items-center p-6 lg:p-10 xl:p-12">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28 }}
-          className="w-full max-w-md border border-[var(--border)] bg-[var(--panel)] p-6"
+          className="w-full max-w-md rounded-[32px] border border-[var(--border)] bg-[var(--panel)] p-6 shadow-[var(--shadow)]"
         >
           <div className="mb-6 flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-soft)]">
+              <p className="text-xs font-medium text-[var(--text-muted)]">
                 {isSetup ? "Onboarding seguro" : "Acceso protegido"}
               </p>
               <h2 className="mt-1 text-2xl font-semibold tracking-tight">
@@ -111,20 +111,21 @@ export function UnlockGate() {
           </div>
 
           {bootstrap.lockReason ? (
-            <div className="mb-4 border border-[var(--border)] bg-[var(--panel-strong)] p-4">
+            <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] p-4">
               <p className="text-sm font-medium">Último motivo de bloqueo</p>
               <p className="mt-1 text-sm leading-6 text-[var(--text-soft)]">{bootstrap.lockReason}</p>
             </div>
           ) : null}
 
           {lastError ? (
-            <div className="mb-4 border border-[var(--border)] bg-[var(--danger-bg)] p-4 text-sm leading-6 text-[var(--text)]">
+            <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--danger-bg)] p-4 text-sm leading-6 text-[var(--danger-text)]" role="alert">
               {lastError}
             </div>
           ) : null}
 
           <div className="grid gap-4">
             <Input
+              id="unlock-pin"
               label={isSetup ? "PIN maestro" : "PIN"}
               placeholder="Ingresa tu credencial local"
               type="password"
@@ -135,7 +136,8 @@ export function UnlockGate() {
 
             {isSetup ? (
               <Input
-                label="Confirmar PIN"
+                  id="unlock-confirm-pin"
+                  label="Confirmar PIN"
                 placeholder="Repite el PIN maestro"
                 type="password"
                 value={confirmPin}
@@ -145,13 +147,13 @@ export function UnlockGate() {
           </div>
 
           <div className="mt-5 grid gap-3 text-sm text-[var(--text-soft)]">
-            <div className="flex items-center justify-between border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
               <span>Intentos fallidos</span>
               <span className="font-medium text-[var(--text)]">
                 {bootstrap.failedAttempts} / {bootstrap.failedAttemptThreshold}
               </span>
             </div>
-            <div className="flex items-center justify-between border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
               <span>Bloqueo temporal</span>
               <span className="font-medium text-[var(--text)]">
                 {bootstrap.lockedUntil ? formatDateTime(bootstrap.lockedUntil) : "No activo"}
@@ -192,9 +194,9 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon: Icon, title, description }: FeatureCardProps) {
   return (
-    <div className="border border-[var(--border)] bg-[var(--panel)] p-5">
-      <div className="grid h-11 w-11 place-items-center border border-[var(--border)] bg-[var(--panel-strong)] text-[var(--text)]">
-        <Icon className="h-5 w-5" />
+    <div className="rounded-3xl border border-[var(--border)] bg-[var(--panel)] p-5 shadow-[var(--shadow-soft)]">
+      <div className="grid h-11 w-11 place-items-center rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] text-[var(--text)]">
+        <Icon aria-hidden="true" className="h-5 w-5" />
       </div>
       <h3 className="mt-4 text-lg font-semibold tracking-tight">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">{description}</p>

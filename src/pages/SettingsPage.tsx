@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { ShieldAlert, SlidersHorizontal } from "lucide-react";
+import { Globe2, MoonStar, MonitorCog, ShieldAlert, SunMedium } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useI18n } from "@/i18n";
 import { useSecurityStore } from "@/store/security-store";
-import { useUiStore } from "@/store/ui-store";
 import type { ThemeMode } from "@/types/security";
 
 export function SettingsPage() {
+  const t = useI18n();
   const hydrated = useSecurityStore((state) => state.hydrated);
   const busy = useSecurityStore((state) => state.busy);
   const updateSettings = useSecurityStore((state) => state.updateSettings);
   const rotatePin = useSecurityStore((state) => state.rotatePin);
   const emergencyLock = useSecurityStore((state) => state.emergencyLock);
-  const pushToast = useUiStore((state) => state.pushToast);
 
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [autoLockMinutes, setAutoLockMinutes] = useState("10");
@@ -60,41 +60,43 @@ export function SettingsPage() {
     theme
   ]);
 
+  useEffect(() => {
+    if (!hasChanges) return;
+
+    const timeout = window.setTimeout(() => {
+      void updateSettings({
+        theme,
+        autoLockMinutes: Number(autoLockMinutes),
+        failedAttemptThreshold: Number(failedAttemptThreshold),
+        cameraModuleEnabled,
+        emergencyMode,
+        locale,
+        defaultRoots: defaultRoots
+          .split("\n")
+          .map((value) => value.trim())
+          .filter(Boolean)
+      }).catch(() => undefined);
+    }, 250);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    autoLockMinutes,
+    cameraModuleEnabled,
+    defaultRoots,
+    emergencyMode,
+    failedAttemptThreshold,
+    locale,
+    theme,
+    updateSettings,
+    hasChanges
+  ]);
+
   if (!hydrated) return null;
 
   async function handleEmergency() {
     try {
       await emergencyLock("Bloqueo de emergencia activado desde ajustes.");
-    } catch (error) {
-      pushToast({
-        title: "No se pudo activar el bloqueo de emergencia",
-        description: error instanceof Error ? error.message : String(error),
-        variant: "critical"
-      });
-    }
-  }
-
-  async function handleSave() {
-    try {
-      await updateSettings({
-      theme,
-      autoLockMinutes: Number(autoLockMinutes),
-      failedAttemptThreshold: Number(failedAttemptThreshold),
-      cameraModuleEnabled,
-      emergencyMode,
-      locale,
-      defaultRoots: defaultRoots
-        .split("\n")
-        .map((value) => value.trim())
-        .filter(Boolean)
-      });
-    } catch (error) {
-      pushToast({
-        title: "No se pudieron guardar las políticas",
-        description: error instanceof Error ? error.message : String(error),
-        variant: "critical"
-      });
-    }
+    } catch {}
   }
 
   async function handleRotate() {
@@ -107,21 +109,21 @@ export function SettingsPage() {
       setCurrentPin("");
       setNextPin("");
       setConfirmPin("");
-    } catch (error) {
-      pushToast({
-        title: "No se pudo rotar el PIN",
-        description: error instanceof Error ? error.message : String(error),
-        variant: "critical"
-      });
-    }
+    } catch {}
   }
+
+  const themeOptions = [
+    { value: "light" as const, label: "Claro", icon: SunMedium },
+    { value: "dark" as const, label: "Oscuro", icon: MoonStar },
+    { value: "system" as const, label: "Sistema", icon: MonitorCog }
+  ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="settings"
-        title="Políticas, tema y preferencias"
-        description="Ajustes persistentes con enfoque enterprise, listos para endurecimiento adicional."
+        eyebrow={t.pages.settingsEyebrow}
+        title={t.pages.settingsTitle}
+        description={t.pages.settingsDescription}
         actions={
           <>
             <Button
@@ -133,13 +135,6 @@ export function SettingsPage() {
             >
               Bloqueo de emergencia
             </Button>
-            <Button
-              icon={SlidersHorizontal}
-              onClick={() => void handleSave()}
-              disabled={busy || !hasChanges}
-            >
-              Guardar políticas
-            </Button>
           </>
         }
       />
@@ -150,22 +145,55 @@ export function SettingsPage() {
           description="Tiempo de auto bloqueo, umbral de fallos y módulo visual."
         >
           <div className="grid gap-4">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">Tema</span>
-              <select
-                className="h-12 border border-[var(--border)] bg-[var(--field)] px-4 text-sm outline-none"
-                value={theme}
-                onChange={(event) => setTheme(event.target.value as ThemeMode)}
-              >
-                <option value="dark">Oscuro</option>
-                <option value="light">Claro</option>
-                <option value="system">Sistema</option>
-              </select>
-            </label>
+            <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{t.settings.language}</span>
+                <span className="flex h-12 items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--field)] px-4 text-sm">
+                  <Globe2 aria-hidden="true" className="h-4 w-4 text-[var(--text-soft)]" />
+                  <select
+                    className="h-full w-full bg-transparent outline-none"
+                    value={locale}
+                    onChange={(event) => setLocale(event.target.value)}
+                  >
+                    <option value="es-PE">Español</option>
+                    <option value="en-US">English</option>
+                  </select>
+                </span>
+                <span className="text-xs text-[var(--text-soft)]">{t.settings.localeHint}</span>
+              </label>
+
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{t.settings.theme}</span>
+                <div className="inline-flex items-center gap-1 rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-1 shadow-[var(--shadow-soft)]">
+                  {themeOptions.map((option) => {
+                    const Icon = option.icon;
+                    const active = theme === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={active}
+                        className={[
+                          "inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition",
+                          active
+                            ? "bg-[var(--accent-soft)] text-[var(--text)]"
+                            : "text-[var(--text-soft)] hover:bg-[var(--panel-strong)] hover:text-[var(--text)]"
+                        ].join(" ")}
+                        onClick={() => setTheme(option.value)}
+                      >
+                        <Icon aria-hidden="true" className="h-4 w-4" />
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <Input
-                label="Auto bloqueo (min)"
+                  id="settings-auto-lock"
+                  label={t.settings.autoLock}
                 type="number"
                 min="1"
                 max="120"
@@ -173,7 +201,8 @@ export function SettingsPage() {
                 onChange={(event) => setAutoLockMinutes(event.target.value)}
               />
               <Input
-                label="Umbral de intentos"
+                  id="settings-threshold"
+                  label={t.settings.threshold}
                 type="number"
                 min="3"
                 max="15"
@@ -182,17 +211,18 @@ export function SettingsPage() {
               />
             </div>
 
-            <Input
-              label="Idioma"
-              value={locale}
-              onChange={(event) => setLocale(event.target.value)}
-              hint="Preparado para i18n futura."
-            />
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4 text-sm text-[var(--text-soft)]">
+              <p className="font-medium text-[var(--text)]">Traducción e i18n</p>
+              <p className="mt-1 text-pretty leading-6">
+                La interfaz usa una capa i18n local y queda preparada para integrar Google Translate
+                desde el backend de Tauri con caché y credenciales seguras.
+              </p>
+            </div>
 
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">Rutas por defecto</span>
+              <span className="text-sm font-medium">{t.settings.defaultRoots}</span>
               <textarea
-                className="min-h-[150px] border border-[var(--border)] bg-[var(--field)] px-4 py-3 text-sm outline-none transition focus:border-[var(--text)] focus:ring-1 focus:ring-[var(--text)]"
+                className="min-h-[150px] rounded-2xl border border-[var(--border)] bg-[var(--field)] px-4 py-3 text-sm outline-none transition focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--ring)]"
                 value={defaultRoots}
                 onChange={(event) => setDefaultRoots(event.target.value)}
                 placeholder={"C:\\Usuarios\\Operaciones\\Documentos\nD:\\Vault"}
@@ -222,19 +252,22 @@ export function SettingsPage() {
           >
             <div className="grid gap-4">
               <Input
-                label="PIN actual"
+                  id="settings-current-pin"
+                label={t.settings.currentPin}
                 type="password"
                 value={currentPin}
                 onChange={(event) => setCurrentPin(event.target.value)}
               />
               <Input
-                label="Nuevo PIN"
+                  id="settings-next-pin"
+                label={t.settings.nextPin}
                 type="password"
                 value={nextPin}
                 onChange={(event) => setNextPin(event.target.value)}
               />
               <Input
-                label="Confirmación"
+                  id="settings-confirm-pin"
+                label={t.settings.confirmPin}
                 type="password"
                 value={confirmPin}
                 onChange={(event) => setConfirmPin(event.target.value)}
@@ -273,25 +306,28 @@ interface ToggleRowProps {
 }
 
 function ToggleRow({ title, description, checked, onChange }: ToggleRowProps) {
+  const titleId = `toggle-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
   return (
-    <div className="flex items-center justify-between gap-4 border border-[var(--border)] bg-[var(--field)] px-4 py-4">
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--field)] px-4 py-4">
       <div>
-        <p className="font-medium">{title}</p>
+        <p id={titleId} className="font-medium">{title}</p>
         <p className="mt-1 text-sm leading-6 text-[var(--text-soft)]">{description}</p>
       </div>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-labelledby={titleId}
         onClick={() => onChange(!checked)}
         className={[
-          "relative inline-flex h-7 w-12 items-center border border-[var(--border)] transition",
+          "relative inline-flex h-7 w-12 items-center rounded-full border border-[var(--border)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
           checked ? "bg-[var(--text)]" : "bg-[var(--panel-strong)]"
         ].join(" ")}
       >
         <span
           className={[
-            "inline-block h-5 w-5 bg-[var(--bg)] transition",
+            "inline-block h-5 w-5 rounded-full bg-[var(--bg)] transition",
             checked ? "translate-x-6" : "translate-x-1"
           ].join(" ")}
         />

@@ -4,7 +4,8 @@ use crate::{
     app_state::AppState,
     models::{
         AddProtectedItemInput, AuthMethod, BootstrapStatus, HydratedAppState,
-        RegisterCameraEventInput, RotatePinInput, SetupPinInput, UpdateSettingsInput,
+        RegisterCameraEventInput, RotatePinInput, SetupPinInput, TerminalCommandResult,
+        TerminalStatus, UpdateSettingsInput,
     },
 };
 
@@ -129,4 +130,29 @@ pub fn export_security_events(
     state
         .export_security_events(destination)
         .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn terminal_status() -> Result<TerminalStatus, String> {
+    Ok(TerminalStatus {
+        available: false,
+        mode: "stub".to_string(),
+        requires_whitelist: true,
+        message: "La ejecución real de comandos sigue deshabilitada hasta definir allowlist, permisos y auditoría por comando.".to_string(),
+        allowlist: vec![
+            "dir".to_string(),
+            "pwd".to_string(),
+            "whoami".to_string(),
+            "git status".to_string(),
+        ],
+    })
+}
+
+#[tauri::command]
+pub fn run_terminal_command(command: String) -> Result<TerminalCommandResult, String> {
+    Ok(TerminalCommandResult {
+        ok: false,
+        command,
+        output: "Stub seguro: la terminal aún no ejecuta comandos reales. La ejecución futura debe pasar por allowlist, permisos explícitos y trazabilidad de auditoría.".to_string(),
+    })
 }

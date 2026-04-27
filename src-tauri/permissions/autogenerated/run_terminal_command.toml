@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-run-terminal-command"
+description = "Enables the run_terminal_command command without any pre-configured scope."
+commands.allow = ["run_terminal_command"]
+
+[[permission]]
+identifier = "deny-run-terminal-command"
+description = "Denies the run_terminal_command command without any pre-configured scope."
+commands.deny = ["run_terminal_command"]

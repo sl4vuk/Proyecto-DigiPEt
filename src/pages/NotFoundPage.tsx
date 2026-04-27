@@ -2,8 +2,10 @@ import { Home } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/i18n";
 
 export function NotFoundPage() {
+  const t = useI18n();
   return (
     <EmptyState
       icon={Home}
@@ -11,7 +13,7 @@ export function NotFoundPage() {
       description="La ruta solicitada no existe dentro de la consola segura."
       action={
         <Link to="/">
-          <Button>Volver al dashboard</Button>
+          <Button>{t.actions.retry}</Button>
         </Link>
       }
     />

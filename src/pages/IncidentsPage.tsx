@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EventList } from "@/features/events/EventList";
+import { useI18n } from "@/i18n";
 import { pickExportDestination } from "@/services/security-api";
 import { useSecurityStore } from "@/store/security-store";
 import { useUiStore } from "@/store/ui-store";
 import type { Severity } from "@/types/security";
 
 export function IncidentsPage() {
+  const t = useI18n();
   const hydrated = useSecurityStore((state) => state.hydrated);
   const exportEvents = useSecurityStore((state) => state.exportEvents);
   const emergencyLock = useSecurityStore((state) => state.emergencyLock);
@@ -55,16 +57,16 @@ export function IncidentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="incidents"
-        title="Historial de eventos y respuesta"
-        description="Trazabilidad de autenticación, integridad, actividad del core y alertas provenientes del módulo de cámara."
+        eyebrow={t.pages.incidentsEyebrow}
+        title={t.pages.incidentsTitle}
+        description={t.pages.incidentsDescription}
         actions={
           <>
             <Button variant="secondary" icon={Download} onClick={() => void handleExport()}>
-              Exportar logs
+              {t.actions.exportLogs}
             </Button>
             <Button variant="danger" icon={Siren} onClick={() => void handleEmergency()}>
-              Bloqueo de emergencia
+              {t.actions.emergencyLock}
             </Button>
           </>
         }
@@ -83,7 +85,7 @@ export function IncidentsPage() {
             <label className="mt-2 flex flex-col gap-2">
               <span className="text-sm font-medium">Filtrar por severidad</span>
               <select
-                className="h-12 border border-[var(--border)] bg-[var(--field)] px-4 text-sm outline-none"
+                className="h-12 rounded-2xl border border-[var(--border)] bg-[var(--field)] px-4 text-sm outline-none transition focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--ring)]"
                 value={severity}
                 onChange={(event) => setSeverity(event.target.value as "all" | Severity)}
               >
@@ -113,7 +115,7 @@ interface SeverityRowProps {
 
 function SeverityRow({ label, value, variant }: SeverityRowProps) {
   return (
-    <div className="flex items-center justify-between border border-[var(--border)] bg-[var(--field)] px-4 py-3">
+    <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--field)] px-4 py-3 shadow-[var(--shadow-soft)]">
       <div className="flex items-center gap-3">
         <div className="grid h-10 w-10 place-items-center border border-[var(--border)] bg-[var(--panel-strong)] text-[var(--text)]">
           <AlertTriangle className="h-4 w-4" />

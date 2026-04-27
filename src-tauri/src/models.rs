@@ -67,6 +67,24 @@ pub enum AuthMethod {
     Camera,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalStatus {
+    pub available: bool,
+    pub mode: String,
+    pub requires_whitelist: bool,
+    pub message: String,
+    pub allowlist: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalCommandResult {
+    pub ok: bool,
+    pub command: String,
+    pub output: String,
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum CameraStatus {

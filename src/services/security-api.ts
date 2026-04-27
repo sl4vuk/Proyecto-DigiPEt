@@ -8,6 +8,8 @@ import type {
   RegisterCameraEventInput,
   RotatePinInput,
   SetupPinInput,
+  TerminalCommandResult,
+  TerminalStatus,
   UpdateSettingsInput
 } from "@/types/security";
 
@@ -65,6 +67,14 @@ export function triggerEmergencyLock(reason: string) {
 
 export function exportSecurityEvents(destination?: string) {
   return invoke<string>("export_security_events", { destination });
+}
+
+export function getTerminalStatus() {
+  return invoke<TerminalStatus>("terminal_status");
+}
+
+export function runTerminalCommand(command: string) {
+  return invoke<TerminalCommandResult>("run_terminal_command", { command });
 }
 
 export async function pickFiles() {

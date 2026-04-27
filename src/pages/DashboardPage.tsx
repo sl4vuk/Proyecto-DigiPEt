@@ -11,11 +11,13 @@ import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { EventList } from "@/features/events/EventList";
+import { useI18n } from "@/i18n";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import { useSecurityStore } from "@/store/security-store";
 import { useUiStore } from "@/store/ui-store";
 
 export function DashboardPage() {
+  const t = useI18n();
   const hydrated = useSecurityStore((state) => state.hydrated);
   const rescanIntegrity = useSecurityStore((state) => state.rescanIntegrity);
   const pushToast = useUiStore((state) => state.pushToast);
@@ -39,14 +41,14 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="dashboard"
-        title="Postura general del entorno"
-        description="Resumen ejecutivo del estado seguro, integridad local y actividad reciente del equipo."
+        eyebrow={t.pages.dashboardEyebrow}
+        title={t.pages.dashboardTitle}
+        description={t.pages.dashboardDescription}
         actions={
           <>
             <Badge variant={hydrated.overview.riskLabel}>{hydrated.overview.riskLabel}</Badge>
             <Button variant="secondary" onClick={() => void handleRescan()}>
-              Re-escanear integridad
+              {t.actions.rescan}
             </Button>
           </>
         }

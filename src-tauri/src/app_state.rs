@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Mutex};
+use std::{env, net::UdpSocket, path::PathBuf, sync::Mutex};
 
 use chrono::{Duration, Utc};
 use zeroize::{Zeroize, Zeroizing};
@@ -91,15 +91,14 @@ impl AppState {
         let key = security::derive_key(&input.pin, &encryption_salt)?;
 
         let mut vault = VaultData::default();
-        push_event(
-            &mut vault.events,
-            SecurityEvent::new(
-                "auth",
-                Severity::Success,
-                "Credencial maestra creada",
-                "La bóveda local fue inicializada y cifrada correctamente.",
-            ),
+        let mut event = SecurityEvent::new(
+            "auth",
+            Severity::Success,
+            "Credencial maestra creada",
+            "La bóveda local fue inicializada y cifrada correctamente.",
         );
+        append_runtime_metadata(&mut event, Some(AuthMethod::Pin), "initialized");
+        push_event(&mut vault.events, event);
 
         runtime.secure_state.initialized = true;
         runtime.secure_state.pin_hash = Some(hash);
@@ -166,6 +165,7 @@ impl AppState {
                 "Intento fallido de autenticación",
                 "Se ingresó un PIN incorrecto para desbloquear la sesión.",
             );
+            append_runtime_metadata(&mut event, Some(method), "failed");
             event.metadata.insert(
                 "failedAttempts".to_string(),
                 runtime.secure_state.failed_attempts.to_string(),
@@ -223,15 +223,14 @@ impl AppState {
             method,
         });
 
-        push_event(
-            &mut vault.events,
-            SecurityEvent::new(
-                "auth",
-                Severity::Success,
-                "Sesión desbloqueada",
-                "La bóveda cifrada se montó en memoria y quedó lista para operar.",
-            ),
+        let mut event = SecurityEvent::new(
+            "auth",
+            Severity::Success,
+            "Sesión desbloqueada",
+            "La bóveda cifrada se montó en memoria y quedó lista para operar.",
         );
+        append_runtime_metadata(&mut event, Some(method), "unlocked");
+        push_event(&mut vault.events, event);
         runtime.vault = Some(vault);
 
         self.persist_state(&runtime)?;
@@ -241,20 +240,20 @@ impl AppState {
 
     pub fn lock_session(&self, reason: Option<String>) -> Result<BootstrapStatus, AppError> {
         let mut runtime = self.inner.lock()?;
+        let session_method = runtime.session.as_ref().map(|session| session.method);
 
         if let Some(vault) = runtime.vault.as_mut() {
             let message = reason
                 .clone()
                 .unwrap_or_else(|| "Sesión bloqueada manualmente.".to_string());
-            push_event(
-                &mut vault.events,
-                SecurityEvent::new(
-                    "auth",
-                    Severity::Info,
-                    "Sesión bloqueada",
-                    message,
-                ),
+            let mut event = SecurityEvent::new(
+                "auth",
+                Severity::Info,
+                "Sesión bloqueada",
+                message,
             );
+            append_runtime_metadata(&mut event, session_method, "locked");
+            push_event(&mut vault.events, event);
             self.persist_vault(&runtime)?;
         }
 
@@ -531,15 +530,14 @@ impl AppState {
         let new_key = security::derive_key(&input.next_pin, &new_salt)?;
 
         let vault = runtime.vault.as_mut().ok_or(AppError::SessionLocked)?;
-        push_event(
-            &mut vault.events,
-            SecurityEvent::new(
-                "auth",
-                Severity::Success,
-                "Credencial rotada",
-                "La bóveda fue re-cifrada con una nueva credencial maestra.",
-            ),
+        let mut event = SecurityEvent::new(
+            "auth",
+            Severity::Success,
+            "Credencial rotada",
+            "La bóveda fue re-cifrada con una nueva credencial maestra.",
         );
+        append_runtime_metadata(&mut event, Some(AuthMethod::Pin), "rotated");
+        push_event(&mut vault.events, event);
 
         runtime.secure_state.pin_hash = Some(new_hash);
         runtime.secure_state.encryption_salt = Some(new_salt);
@@ -589,12 +587,13 @@ impl AppState {
     pub fn trigger_emergency_lock(&self, reason: String) -> Result<BootstrapStatus, AppError> {
         let mut runtime = self.inner.lock()?;
 
-        let event = SecurityEvent::new(
+        let mut event = SecurityEvent::new(
             "system",
             Severity::Critical,
             "Bloqueo de emergencia",
             reason.clone(),
         );
+        append_runtime_metadata(&mut event, runtime.session.as_ref().map(|session| session.method), "suspicious");
 
         if let Some(vault) = runtime.vault.as_mut() {
             push_event(&mut vault.events, event);
@@ -740,5 +739,41 @@ fn push_event(events: &mut Vec<SecurityEvent>, event: SecurityEvent) {
     events.insert(0, event);
     if events.len() > MAX_EVENTS {
         events.truncate(MAX_EVENTS);
+    }
+}
+
+fn append_runtime_metadata(event: &mut SecurityEvent, method: Option<AuthMethod>, status: &str) {
+    let hostname = env::var("COMPUTERNAME")
+        .or_else(|_| env::var("HOSTNAME"))
+        .unwrap_or_else(|_| "unknown".to_string());
+    let username = env::var("USERNAME")
+        .or_else(|_| env::var("USER"))
+        .unwrap_or_else(|_| "unknown".to_string());
+    let os = env::consts::OS.to_string();
+    let device_type = if os.contains("windows") || os.contains("linux") || os.contains("macos") {
+        "pc"
+    } else {
+        "device"
+    };
+
+    event.metadata.insert("hostname".to_string(), hostname);
+    event.metadata.insert("username".to_string(), username);
+    event.metadata.insert("os".to_string(), os);
+    event.metadata.insert("deviceType".to_string(), device_type.to_string());
+    event.metadata.insert("status".to_string(), status.to_string());
+
+    if let Some(method) = method {
+        event
+            .metadata
+            .insert("authMethod".to_string(), format!("{:?}", method).to_lowercase());
+    }
+
+    if let Ok(socket) = UdpSocket::bind("0.0.0.0:0") {
+        let _ = socket.connect("8.8.8.8:80");
+        if let Ok(address) = socket.local_addr() {
+            event
+                .metadata
+                .insert("localIp".to_string(), address.ip().to_string());
+        }
     }
 }

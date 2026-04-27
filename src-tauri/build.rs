@@ -16,6 +16,8 @@ fn main() {
                 "register_camera_event",
                 "trigger_emergency_lock",
                 "export_security_events",
+                "terminal_status",
+                "run_terminal_command",
             ]),
         ),
     )

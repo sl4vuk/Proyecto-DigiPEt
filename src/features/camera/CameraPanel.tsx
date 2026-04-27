@@ -126,7 +126,7 @@ export function CameraPanel() {
       actions={statusBadge}
     >
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="overflow-hidden border border-[var(--border)] bg-[var(--field)]">
+        <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--field)] shadow-[var(--shadow-soft)]">
           {stream ? (
             <video
               ref={videoRef}
@@ -138,8 +138,8 @@ export function CameraPanel() {
           ) : (
             <div className="grid aspect-video place-items-center">
               <div className="text-center">
-                <div className="mx-auto grid h-14 w-14 place-items-center border border-[var(--border)] bg-[var(--panel-strong)] text-[var(--text)]">
-                  <Camera className="h-6 w-6" />
+                <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] text-[var(--text)]">
+                  <Camera aria-hidden="true" className="h-6 w-6" />
                 </div>
                 <p className="mt-4 font-medium">Vista previa detenida</p>
                 <p className="mt-2 text-sm text-[var(--text-soft)]">
@@ -151,12 +151,12 @@ export function CameraPanel() {
         </div>
 
         <div className="space-y-4">
-          <div className="border border-[var(--border)] bg-[var(--field)] p-4">
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--field)] p-4">
             <p className="text-sm font-medium">Estado detectado</p>
             <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">{availability}</p>
           </div>
 
-          <div className="border border-[var(--border)] bg-[var(--field)] p-4">
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--field)] p-4">
             <p className="text-sm font-medium">Fase de integración</p>
             <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
               El panel ya resuelve acceso a webcam, estado, pruebas manuales y registro de

@@ -4,14 +4,18 @@ import type { ThemeMode, ToastMessage } from "@/types/security";
 interface UiState {
   theme: ThemeMode;
   toasts: ToastMessage[];
+  sidebarCollapsed: boolean;
   setTheme: (theme: ThemeMode) => void;
   applyTheme: (theme: ThemeMode) => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  toggleSidebar: () => void;
   pushToast: (toast: Omit<ToastMessage, "id"> & { id?: string }) => string;
   removeToast: (id: string) => void;
   clearToasts: () => void;
 }
 
 const STORAGE_KEY = "digipet.theme";
+const SIDEBAR_KEY = "digipet.sidebar-collapsed";
 
 function resolveStoredTheme(): ThemeMode {
   if (typeof window === "undefined") return "dark";
@@ -40,9 +44,15 @@ function syncTheme(theme: ThemeMode) {
   }
 }
 
+function resolveSidebarState() {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(SIDEBAR_KEY) === "true";
+}
+
 export const useUiStore = create<UiState>((set) => ({
   theme: resolveStoredTheme(),
   toasts: [],
+  sidebarCollapsed: resolveSidebarState(),
   setTheme: (theme) => {
     syncTheme(theme);
     set({ theme });
@@ -50,6 +60,20 @@ export const useUiStore = create<UiState>((set) => ({
   applyTheme: (theme) => {
     syncTheme(theme);
   },
+  setSidebarCollapsed: (collapsed) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(SIDEBAR_KEY, String(collapsed));
+    }
+    set({ sidebarCollapsed: collapsed });
+  },
+  toggleSidebar: () =>
+    set((state) => {
+      const next = !state.sidebarCollapsed;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(SIDEBAR_KEY, String(next));
+      }
+      return { sidebarCollapsed: next };
+    }),
   pushToast: (toast) => {
     const id = toast.id ?? crypto.randomUUID();
     set((state) => ({

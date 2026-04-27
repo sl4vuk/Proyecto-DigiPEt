@@ -3,11 +3,13 @@ import { FolderPlus, RefreshCcw, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProtectedItemsTable } from "@/features/items/ProtectedItemsTable";
+import { useI18n } from "@/i18n";
 import { pickDirectory, pickFiles } from "@/services/security-api";
 import { useSecurityStore } from "@/store/security-store";
 import { useUiStore } from "@/store/ui-store";
 
 export function ProtectedItemsPage() {
+  const t = useI18n();
   const hydrated = useSecurityStore((state) => state.hydrated);
   const busy = useSecurityStore((state) => state.busy);
   const addItem = useSecurityStore((state) => state.addItem);
@@ -120,19 +122,19 @@ export function ProtectedItemsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="inventory"
-        title="Gestión de archivos y carpetas protegidas"
-        description="Alta, baja, inspección, bloqueo masivo y filtros de operación sobre el inventario local."
+        eyebrow={t.pages.protectedEyebrow}
+        title={t.pages.protectedTitle}
+        description={t.pages.protectedDescription}
         actions={
           <>
             <Button variant="secondary" icon={Upload} onClick={() => void handleAddFiles()} disabled={adding || busy}>
-              Agregar archivos
+              {t.actions.addFiles}
             </Button>
             <Button variant="secondary" icon={FolderPlus} onClick={() => void handleAddDirectory()} disabled={adding || busy}>
-              Agregar carpeta
+              {t.actions.addFolder}
             </Button>
             <Button icon={RefreshCcw} onClick={() => void handleRescan()} disabled={busy}>
-              Revalidar integridad
+              {t.actions.rescan}
             </Button>
           </>
         }

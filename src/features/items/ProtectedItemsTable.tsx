@@ -120,8 +120,10 @@ export function ProtectedItemsTable({
     >
       <div className="mb-4 grid gap-3 xl:grid-cols-[1.2fr_0.5fr_0.5fr_0.45fr]">
         <label className="flex items-center gap-3 border border-[var(--border)] bg-[var(--field)] px-4">
+          <span className="sr-only">Buscar por ruta o nota</span>
           <Search className="h-4 w-4 text-[var(--text-soft)]" />
           <input
+            aria-label="Buscar por ruta o nota"
             className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-[var(--text-soft)] placeholder:opacity-70"
             placeholder="Buscar por ruta o nota"
             value={query}
@@ -130,6 +132,7 @@ export function ProtectedItemsTable({
         </label>
 
         <Select
+          ariaLabel="Filtrar por tipo"
           value={kindFilter}
           onChange={setKindFilter}
           options={[
@@ -140,6 +143,7 @@ export function ProtectedItemsTable({
         />
 
         <Select
+          ariaLabel="Filtrar por integridad"
           value={integrityFilter}
           onChange={setIntegrityFilter}
           options={[
@@ -151,6 +155,7 @@ export function ProtectedItemsTable({
         />
 
         <Select
+          ariaLabel="Ordenar inventario"
           value={sort}
           onChange={setSort}
           options={[
@@ -161,10 +166,11 @@ export function ProtectedItemsTable({
         />
       </div>
 
-      <div className="overflow-hidden border border-[var(--border)]">
-        <div className="hidden grid-cols-[44px_1.5fr_0.45fr_0.45fr_0.45fr_0.4fr_0.7fr] gap-4 bg-[var(--panel)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-soft)] lg:grid">
+      <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-soft)]">
+        <div className="hidden grid-cols-[44px_1.5fr_0.45fr_0.45fr_0.45fr_0.4fr_0.7fr] gap-4 border-b border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3 text-xs font-medium text-[var(--text-soft)] lg:grid">
           <label className="grid place-items-center">
             <input
+              aria-label="Seleccionar todos los elementos"
               type="checkbox"
               checked={Boolean(filtered.length) && filtered.every((item) => selectedIds.includes(item.id))}
               onChange={(event) => toggleAll(event.target.checked)}
@@ -182,31 +188,63 @@ export function ProtectedItemsTable({
           {filtered.map((item) => (
             <div
               key={item.id}
-              className="grid gap-3 bg-[var(--field)] px-4 py-4 lg:grid-cols-[44px_1.5fr_0.45fr_0.45fr_0.45fr_0.4fr_0.7fr]"
+              className="bg-[var(--panel)] px-4 py-4"
             >
-              <label className="grid place-items-start lg:place-items-center">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.includes(item.id)}
-                  onChange={(event) => toggle(item.id, event.target.checked)}
-                />
-              </label>
-
-              <div className="min-w-0">
-                <p className="truncate font-medium">{item.path}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <Badge variant={item.locked ? "sealed" : "unlocked"}>
-                    {item.locked ? "bloqueado" : "editable"}
-                  </Badge>
-                  {item.notes ? <Badge variant="neutral">{item.notes}</Badge> : null}
+              <div className="lg:hidden">
+                <div className="flex items-start gap-3">
+                  <label className="mt-1">
+                    <input
+                      aria-label={`Seleccionar ${item.path}`}
+                      type="checkbox"
+                      checked={selectedIds.includes(item.id)}
+                      onChange={(event) => toggle(item.id, event.target.checked)}
+                    />
+                  </label>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{item.path}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Badge variant={item.locked ? "sealed" : "unlocked"}>
+                        {item.locked ? "bloqueado" : "editable"}
+                      </Badge>
+                      <Badge variant="neutral">{item.kind}</Badge>
+                      <Badge variant={item.integrityStatus}>{item.integrityStatus}</Badge>
+                    </div>
+                  </div>
                 </div>
+                <dl className="mt-4 grid gap-2 text-sm text-[var(--text-soft)]">
+                  <MetaRow label="Protección" value={item.protectionLevel} />
+                  <MetaRow label="Tamaño" value={formatBytes(item.sizeBytes)} />
+                  <MetaRow label="Actividad" value={formatDateTime(item.updatedAt)} />
+                  {item.notes ? <MetaRow label="Nota" value={item.notes} /> : null}
+                </dl>
               </div>
 
-              <Cell><Badge variant="neutral">{item.kind}</Badge></Cell>
-              <Cell><Badge variant="info">{item.protectionLevel}</Badge></Cell>
-              <Cell><Badge variant={item.integrityStatus}>{item.integrityStatus}</Badge></Cell>
-              <Cell>{formatBytes(item.sizeBytes)}</Cell>
-              <Cell>{formatDateTime(item.updatedAt)}</Cell>
+              <div className="hidden gap-3 lg:grid lg:grid-cols-[44px_1.5fr_0.45fr_0.45fr_0.45fr_0.4fr_0.7fr] lg:items-center">
+                <label className="grid place-items-center">
+                  <input
+                    aria-label={`Seleccionar ${item.path}`}
+                    type="checkbox"
+                    checked={selectedIds.includes(item.id)}
+                    onChange={(event) => toggle(item.id, event.target.checked)}
+                  />
+                </label>
+
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{item.path}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <Badge variant={item.locked ? "sealed" : "unlocked"}>
+                      {item.locked ? "bloqueado" : "editable"}
+                    </Badge>
+                    {item.notes ? <Badge variant="neutral">{item.notes}</Badge> : null}
+                  </div>
+                </div>
+
+                <Cell><Badge variant="neutral">{item.kind}</Badge></Cell>
+                <Cell><Badge variant="info">{item.protectionLevel}</Badge></Cell>
+                <Cell><Badge variant={item.integrityStatus}>{item.integrityStatus}</Badge></Cell>
+                <Cell>{formatBytes(item.sizeBytes)}</Cell>
+                <Cell>{formatDateTime(item.updatedAt)}</Cell>
+              </div>
             </div>
           ))}
         </div>
@@ -233,15 +271,17 @@ interface SelectOption<T extends string> {
 }
 
 interface SelectProps<T extends string> {
+  ariaLabel: string;
   value: T;
   onChange: (value: T) => void;
   options: Array<SelectOption<T>>;
 }
 
-function Select<T extends string>({ value, onChange, options }: SelectProps<T>) {
+function Select<T extends string>({ ariaLabel, value, onChange, options }: SelectProps<T>) {
   return (
     <select
-      className="h-12 border border-[var(--border)] bg-[var(--field)] px-4 text-sm outline-none transition focus:border-[var(--text)] focus:ring-1 focus:ring-[var(--text)]"
+      aria-label={ariaLabel}
+      className="h-12 rounded-2xl border border-[var(--border)] bg-[var(--field)] px-4 text-sm outline-none transition focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--ring)]"
       value={value}
       onChange={(event) => onChange(event.target.value as T)}
     >
@@ -251,5 +291,19 @@ function Select<T extends string>({ value, onChange, options }: SelectProps<T>) 
         </option>
       ))}
     </select>
+  );
+}
+
+interface MetaRowProps {
+  label: string;
+  value: string;
+}
+
+function MetaRow({ label, value }: MetaRowProps) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--panel-strong)] px-3 py-2">
+      <dt className="text-[var(--text-muted)]">{label}</dt>
+      <dd className="truncate font-medium text-[var(--text)]">{value}</dd>
+    </div>
   );
 }

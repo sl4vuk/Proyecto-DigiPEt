@@ -4,6 +4,7 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { ProtectedItemsPage } from "@/pages/ProtectedItemsPage";
 import { IncidentsPage } from "@/pages/IncidentsPage";
 import { CameraPage } from "@/pages/CameraPage";
+import { TerminalPage } from "@/pages/TerminalPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
@@ -14,9 +15,10 @@ export const router = createHashRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "protected-items", element: <ProtectedItemsPage /> },
-      { path: "incidents", element: <IncidentsPage /> },
-      { path: "camera", element: <CameraPage /> },
-      { path: "settings", element: <SettingsPage /> },
+        { path: "incidents", element: <IncidentsPage /> },
+        { path: "camera", element: <CameraPage /> },
+        { path: "terminal", element: <TerminalPage /> },
+        { path: "settings", element: <SettingsPage /> },
       { path: "*", element: <NotFoundPage /> }
     ]
   }

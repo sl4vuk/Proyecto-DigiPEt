@@ -237,11 +237,6 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
         ...syncHydrated(hydrated, get().bootstrap),
         busy: false
       });
-      useUiStore.getState().pushToast({
-        title: "Ajustes guardados",
-        description: "Las políticas locales fueron actualizadas.",
-        variant: "success"
-      });
     } catch (error) {
       const message = normalizeError(error);
       set({ busy: false, lastError: message });

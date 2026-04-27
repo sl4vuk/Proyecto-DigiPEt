@@ -16,18 +16,18 @@ interface ButtonProps
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "border border-[var(--text)] bg-[var(--text)] text-[var(--bg)] hover:opacity-92",
+    "border border-[var(--border-strong)] bg-[var(--panel)] text-[var(--text)] shadow-[var(--shadow-soft)] hover:bg-[var(--panel-strong)]",
   secondary:
-    "border border-[var(--border)] bg-[var(--panel-strong)] text-[var(--text)] hover:bg-[var(--field)]",
+    "border border-[var(--border)] bg-[var(--panel-strong)] text-[var(--text)] hover:bg-[var(--field-hover)]",
   ghost:
-    "border border-[var(--border)] bg-transparent text-[var(--text-soft)] hover:bg-[var(--panel-strong)] hover:text-[var(--text)]",
+    "border border-transparent bg-transparent text-[var(--text-soft)] hover:border-[var(--border)] hover:bg-[var(--panel-strong)] hover:text-[var(--text)]",
   danger:
-    "border border-[var(--border)] bg-[var(--danger-bg)] text-[var(--danger-text)] hover:bg-[var(--panel-strong)]"
+    "border border-transparent bg-[var(--danger-bg)] text-[var(--danger-text)] hover:opacity-95"
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "h-10 px-4 text-sm",
-  md: "h-11 px-[18px] text-sm"
+  sm: "h-9 px-3.5 text-sm",
+  md: "h-10 px-4 text-sm"
 };
 
 export function Button({
@@ -44,7 +44,7 @@ export function Button({
     <button
       type={type}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-none font-medium transition duration-200 focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--text)] disabled:cursor-not-allowed disabled:opacity-55",
+        "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] disabled:cursor-not-allowed disabled:opacity-55",
         variantStyles[variant],
         sizeStyles[size],
         fluid && "w-full",

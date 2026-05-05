@@ -134,5 +134,19 @@ export interface TerminalStatus {
 export interface TerminalCommandResult {
   ok: boolean;
   command: string;
-  output: string;
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  cwd?: string | null;
+}
+
+export interface SystemInfoPayload {
+  hostname: string;
+  username: string;
+  osName: string;
+  osVersion: string;
+  deviceName: string;
+  localIp?: string | null;
+  macAddresses: string[];
+  location?: string | null;
 }

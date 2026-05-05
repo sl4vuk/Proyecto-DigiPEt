@@ -67,24 +67,6 @@ pub enum AuthMethod {
     Camera,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TerminalStatus {
-    pub available: bool,
-    pub mode: String,
-    pub requires_whitelist: bool,
-    pub message: String,
-    pub allowlist: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TerminalCommandResult {
-    pub ok: bool,
-    pub command: String,
-    pub output: String,
-}
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum CameraStatus {
@@ -162,12 +144,7 @@ pub struct SecurityEvent {
 }
 
 impl SecurityEvent {
-    pub fn new(
-        category: impl Into<String>,
-        severity: Severity,
-        title: impl Into<String>,
-        description: impl Into<String>,
-    ) -> Self {
+    pub fn new(category: impl Into<String>, severity: Severity, title: impl Into<String>, description: impl Into<String>) -> Self {
         Self {
             id: uuid::Uuid::new_v4().to_string(),
             timestamp: Utc::now(),
@@ -224,12 +201,7 @@ pub struct VaultData {
 impl Default for VaultData {
     fn default() -> Self {
         let mut events = Vec::new();
-        events.push(SecurityEvent::new(
-            "system",
-            Severity::Info,
-            "Vault listo",
-            "Se creó la estructura inicial del contenedor seguro.",
-        ));
+        events.push(SecurityEvent::new("system", Severity::Info, "Vault listo", "Se creó la estructura inicial del contenedor seguro."));
 
         Self {
             items: Vec::new(),
@@ -281,6 +253,40 @@ pub struct EncryptedVaultBlob {
     pub version: u8,
     pub nonce: String,
     pub ciphertext: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalStatus {
+    pub available: bool,
+    pub mode: String,
+    pub requires_whitelist: bool,
+    pub message: String,
+    pub allowlist: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TerminalCommandResult {
+    pub ok: bool,
+    pub command: String,
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: i32,
+    pub cwd: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemInfoPayload {
+    pub hostname: String,
+    pub username: String,
+    pub os_name: String,
+    pub os_version: String,
+    pub device_name: String,
+    pub local_ip: Option<String>,
+    pub mac_addresses: Vec<String>,
+    pub location: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

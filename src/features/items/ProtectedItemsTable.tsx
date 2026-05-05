@@ -1,309 +1,101 @@
-import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { FolderLock, Search } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { Clock3, EyeOff, FolderLock, Search, ShieldCheck } from "lucide-react";
+import { ActionButton } from "@/components/security/ActionButton";
+import { StatusChip } from "@/components/security/StatusChip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import type { ProtectedItem } from "@/types/security";
+import type { ProtectedItem, SecurityEvent } from "@/types/security";
 
 interface ProtectedItemsTableProps {
   items: ProtectedItem[];
+  events: SecurityEvent[];
   selectedIds: string[];
+  hiddenIds: string[];
   busy?: boolean;
   onSelectionChange: (ids: string[]) => void;
   onToggleLock: (ids: string[], locked: boolean) => void;
+  onToggleHidden: (ids: string[], hidden: boolean) => void;
   onRemove: (ids: string[]) => void;
+  onOpenHistory: (path: string) => void;
 }
 
-export function ProtectedItemsTable({
-  items,
-  selectedIds,
-  busy,
-  onSelectionChange,
-  onToggleLock,
-  onRemove
-}: ProtectedItemsTableProps) {
+export function ProtectedItemsTable({ items, events, selectedIds, hiddenIds, busy, onSelectionChange, onToggleLock, onToggleHidden, onRemove, onOpenHistory }: ProtectedItemsTableProps) {
   const [query, setQuery] = useState("");
-  const [kindFilter, setKindFilter] = useState<"all" | "file" | "directory">("all");
-  const [integrityFilter, setIntegrityFilter] = useState<"all" | "verified" | "changed" | "missing">("all");
-  const [sort, setSort] = useState<"updated" | "size" | "path">("updated");
-
-  const filtered = useMemo(() => {
-    const next = items.filter((item) => {
-      const matchesQuery =
-        !query ||
-        item.path.toLowerCase().includes(query.toLowerCase()) ||
-        (item.notes ?? "").toLowerCase().includes(query.toLowerCase());
-
-      const matchesKind = kindFilter === "all" || item.kind === kindFilter;
-      const matchesIntegrity =
-        integrityFilter === "all" || item.integrityStatus === integrityFilter;
-
-      return matchesQuery && matchesKind && matchesIntegrity;
-    });
-
-    next.sort((left, right) => {
-      if (sort === "size") {
-        return right.sizeBytes - left.sizeBytes;
-      }
-      if (sort === "path") {
-        return left.path.localeCompare(right.path);
-      }
-      return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
-    });
-
-    return next;
-  }, [items, integrityFilter, kindFilter, query, sort]);
+  const filtered = useMemo(() => items.filter((item) => !query || item.path.toLowerCase().includes(query.toLowerCase()) || (item.notes ?? "").toLowerCase().includes(query.toLowerCase())), [items, query]);
 
   if (!items.length) {
-    return (
-      <EmptyState
-        icon={FolderLock}
-        title="Todavía no hay activos protegidos"
-        description="Agrega archivos o carpetas desde el panel superior y DigiPET registrará su estado, huella de integridad y política de bloqueo."
-      />
-    );
+    return <EmptyState icon={FolderLock} title="Sin activos" description="Agrega un archivo o carpeta para comenzar." action={<ActionButton>Agregar</ActionButton>} />;
   }
 
-  function toggle(id: string, checked: boolean) {
-    if (checked) {
-      onSelectionChange([...selectedIds, id]);
-      return;
-    }
-    onSelectionChange(selectedIds.filter((current) => current !== id));
-  }
-
-  function toggleAll(checked: boolean) {
-    if (checked) {
-      onSelectionChange(filtered.map((item) => item.id));
-      return;
-    }
-    onSelectionChange([]);
+  function toggleSelection(id: string) {
+    onSelectionChange(selectedIds.includes(id) ? selectedIds.filter((value) => value !== id) : [...selectedIds, id]);
   }
 
   return (
-    <Card
-      title="Inventario protegido"
-      description="Búsqueda, filtros, ordenamiento y acciones masivas sobre el registro local seguro."
-      actions={
-        selectedIds.length ? (
-          <>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => onToggleLock(selectedIds, true)}
-              disabled={busy}
-            >
-              Bloquear selección
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onToggleLock(selectedIds, false)}
-              disabled={busy}
-            >
-              Desbloquear
-            </Button>
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={() => onRemove(selectedIds)}
-              disabled={busy}
-            >
-              Quitar
-            </Button>
-          </>
-        ) : null
-      }
-    >
-      <div className="mb-4 grid gap-3 xl:grid-cols-[1.2fr_0.5fr_0.5fr_0.45fr]">
-        <label className="flex items-center gap-3 border border-[var(--border)] bg-[var(--field)] px-4">
-          <span className="sr-only">Buscar por ruta o nota</span>
-          <Search className="h-4 w-4 text-[var(--text-soft)]" />
-          <input
-            aria-label="Buscar por ruta o nota"
-            className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-[var(--text-soft)] placeholder:opacity-70"
-            placeholder="Buscar por ruta o nota"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
+    <div className="space-y-4 rounded-[28px] bg-transparent p-1">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <label className="flex h-12 min-w-[280px] items-center gap-3 rounded-2xl bg-[var(--field)] px-4 text-base text-[var(--text-soft)]">
+          <Search aria-hidden="true" className="h-5 w-5" />
+          <input aria-label="Buscar activo" className="w-full bg-transparent outline-none placeholder:text-[var(--text-muted)]" placeholder="Buscar activo" value={query} onChange={(event) => setQuery(event.target.value)} />
         </label>
 
-        <Select
-          ariaLabel="Filtrar por tipo"
-          value={kindFilter}
-          onChange={setKindFilter}
-          options={[
-            { value: "all", label: "Todos los tipos" },
-            { value: "file", label: "Archivos" },
-            { value: "directory", label: "Carpetas" }
-          ]}
-        />
-
-        <Select
-          ariaLabel="Filtrar por integridad"
-          value={integrityFilter}
-          onChange={setIntegrityFilter}
-          options={[
-            { value: "all", label: "Toda integridad" },
-            { value: "verified", label: "Verificados" },
-            { value: "changed", label: "Modificados" },
-            { value: "missing", label: "Faltantes" }
-          ]}
-        />
-
-        <Select
-          ariaLabel="Ordenar inventario"
-          value={sort}
-          onChange={setSort}
-          options={[
-            { value: "updated", label: "Ordenar por actividad" },
-            { value: "size", label: "Ordenar por tamaño" },
-            { value: "path", label: "Ordenar por ruta" }
-          ]}
-        />
+        <div className="flex flex-wrap gap-2">
+          <ActionButton onClick={() => onToggleLock(selectedIds, true)} disabled={busy || !selectedIds.length}>Bloquear</ActionButton>
+          <ActionButton emphasis="subtle" onClick={() => onToggleLock(selectedIds, false)} disabled={busy || !selectedIds.length}>Desbloquear</ActionButton>
+          <ActionButton emphasis="subtle" onClick={() => onToggleHidden(selectedIds, true)} disabled={busy || !selectedIds.length}>Ocultar</ActionButton>
+        </div>
       </div>
 
-      <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-soft)]">
-        <div className="hidden grid-cols-[44px_1.5fr_0.45fr_0.45fr_0.45fr_0.4fr_0.7fr] gap-4 border-b border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3 text-xs font-medium text-[var(--text-soft)] lg:grid">
-          <label className="grid place-items-center">
-            <input
-              aria-label="Seleccionar todos los elementos"
-              type="checkbox"
-              checked={Boolean(filtered.length) && filtered.every((item) => selectedIds.includes(item.id))}
-              onChange={(event) => toggleAll(event.target.checked)}
-            />
-          </label>
-          <span>Ruta</span>
-          <span>Tipo</span>
-          <span>Protección</span>
-          <span>Integridad</span>
-          <span>Tamaño</span>
-          <span>Actividad</span>
-        </div>
-
-        <div className="divide-y divide-[var(--border)]">
-          {filtered.map((item) => (
-            <div
-              key={item.id}
-              className="bg-[var(--panel)] px-4 py-4"
-            >
-              <div className="lg:hidden">
-                <div className="flex items-start gap-3">
-                  <label className="mt-1">
-                    <input
-                      aria-label={`Seleccionar ${item.path}`}
-                      type="checkbox"
-                      checked={selectedIds.includes(item.id)}
-                      onChange={(event) => toggle(item.id, event.target.checked)}
-                    />
-                  </label>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{item.path}</p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <Badge variant={item.locked ? "sealed" : "unlocked"}>
-                        {item.locked ? "bloqueado" : "editable"}
-                      </Badge>
-                      <Badge variant="neutral">{item.kind}</Badge>
-                      <Badge variant={item.integrityStatus}>{item.integrityStatus}</Badge>
-                    </div>
-                  </div>
+      <div className="space-y-2">
+        {filtered.map((item) => {
+          const hidden = hiddenIds.includes(item.id);
+          const relatedEvents = events.filter((event) => event.path === item.path).length;
+          return (
+            <div key={item.id} className="grid gap-4 rounded-[24px] bg-[var(--surface)] px-4 py-4 xl:grid-cols-[auto_1.4fr_0.8fr_auto] xl:items-center">
+              <label className="flex items-start gap-3 xl:items-center">
+                <input type="checkbox" aria-label={`Seleccionar ${item.path}`} checked={selectedIds.includes(item.id)} onChange={() => toggleSelection(item.id)} />
+                <div className="grid size-10 place-items-center rounded-xl text-[var(--text)]">
+                  <FolderLock aria-hidden="true" className="h-5 w-5" />
                 </div>
-                <dl className="mt-4 grid gap-2 text-sm text-[var(--text-soft)]">
-                  <MetaRow label="Protección" value={item.protectionLevel} />
-                  <MetaRow label="Tamaño" value={formatBytes(item.sizeBytes)} />
-                  <MetaRow label="Actividad" value={formatDateTime(item.updatedAt)} />
-                  {item.notes ? <MetaRow label="Nota" value={item.notes} /> : null}
-                </dl>
+              </label>
+
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-base font-medium text-[var(--text)]">{item.path}</p>
+                  {hidden ? <StatusChip label="Oculto" tone="neutral" leading="dot" /> : null}
+                </div>
+                <div className="mt-2 grid gap-2 text-sm text-[var(--text-soft)] md:grid-cols-2 xl:grid-cols-4">
+                  <Meta label="Cifrado" value={item.locked ? "Protegido" : "En memoria"} />
+                  <Meta label="Integridad" value={item.integrityStatus} />
+                  <Meta label="Acceso" value={item.lastAccessedAt ? formatDateTime(item.lastAccessedAt) : "Sin registro"} />
+                  <Meta label="Historial" value={`${relatedEvents}`} />
+                </div>
               </div>
 
-              <div className="hidden gap-3 lg:grid lg:grid-cols-[44px_1.5fr_0.45fr_0.45fr_0.45fr_0.4fr_0.7fr] lg:items-center">
-                <label className="grid place-items-center">
-                  <input
-                    aria-label={`Seleccionar ${item.path}`}
-                    type="checkbox"
-                    checked={selectedIds.includes(item.id)}
-                    onChange={(event) => toggle(item.id, event.target.checked)}
-                  />
-                </label>
+              <div className="grid gap-2 text-sm text-[var(--text-soft)]">
+                <Meta label="Tipo" value={item.kind} />
+                <Meta label="Tamaño" value={formatBytes(item.sizeBytes)} />
+                <Meta label="Última act." value={formatDateTime(item.updatedAt)} />
+              </div>
 
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{item.path}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <Badge variant={item.locked ? "sealed" : "unlocked"}>
-                      {item.locked ? "bloqueado" : "editable"}
-                    </Badge>
-                    {item.notes ? <Badge variant="neutral">{item.notes}</Badge> : null}
-                  </div>
-                </div>
-
-                <Cell><Badge variant="neutral">{item.kind}</Badge></Cell>
-                <Cell><Badge variant="info">{item.protectionLevel}</Badge></Cell>
-                <Cell><Badge variant={item.integrityStatus}>{item.integrityStatus}</Badge></Cell>
-                <Cell>{formatBytes(item.sizeBytes)}</Cell>
-                <Cell>{formatDateTime(item.updatedAt)}</Cell>
+              <div className="flex flex-wrap gap-2 xl:justify-end">
+                <ActionButton emphasis="subtle" icon={Clock3} onClick={() => onOpenHistory(item.path)}>Historial</ActionButton>
+                <ActionButton emphasis="subtle" icon={EyeOff} onClick={() => onToggleHidden([item.id], !hidden)}>{hidden ? "Restaurar" : "Ocultar"}</ActionButton>
+                <ActionButton icon={ShieldCheck} onClick={() => onToggleLock([item.id], !item.locked)}>{item.locked ? "Abrir" : "Bloquear"}</ActionButton>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
-    </Card>
-  );
-}
-
-interface CellProps {
-  children: ReactNode;
-}
-
-function Cell({ children }: CellProps) {
-  return (
-    <div className="text-sm text-[var(--text-soft)] lg:flex lg:items-center">
-      <span>{children}</span>
     </div>
   );
 }
 
-interface SelectOption<T extends string> {
-  value: T;
-  label: string;
-}
-
-interface SelectProps<T extends string> {
-  ariaLabel: string;
-  value: T;
-  onChange: (value: T) => void;
-  options: Array<SelectOption<T>>;
-}
-
-function Select<T extends string>({ ariaLabel, value, onChange, options }: SelectProps<T>) {
+function Meta({ label, value }: { label: string; value: string }) {
   return (
-    <select
-      aria-label={ariaLabel}
-      className="h-12 rounded-2xl border border-[var(--border)] bg-[var(--field)] px-4 text-sm outline-none transition focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--ring)]"
-      value={value}
-      onChange={(event) => onChange(event.target.value as T)}
-    >
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-interface MetaRowProps {
-  label: string;
-  value: string;
-}
-
-function MetaRow({ label, value }: MetaRowProps) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--panel-strong)] px-3 py-2">
-      <dt className="text-[var(--text-muted)]">{label}</dt>
-      <dd className="truncate font-medium text-[var(--text)]">{value}</dd>
+    <div>
+      <p className="text-[var(--text-muted)]">{label}</p>
+      <p className="mt-1 font-medium text-[var(--text)]">{value}</p>
     </div>
   );
 }

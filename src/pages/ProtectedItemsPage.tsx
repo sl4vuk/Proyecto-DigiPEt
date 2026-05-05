@@ -1,15 +1,14 @@
-import { useState } from "react";
 import { FolderPlus, RefreshCcw, Upload } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { useState } from "react";
+import { ActionButton } from "@/components/security/ActionButton";
+import { MetricItem } from "@/components/security/MetricItem";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ProtectedItemsTable } from "@/features/items/ProtectedItemsTable";
-import { useI18n } from "@/i18n";
 import { pickDirectory, pickFiles } from "@/services/security-api";
 import { useSecurityStore } from "@/store/security-store";
 import { useUiStore } from "@/store/ui-store";
 
 export function ProtectedItemsPage() {
-  const t = useI18n();
   const hydrated = useSecurityStore((state) => state.hydrated);
   const busy = useSecurityStore((state) => state.busy);
   const addItem = useSecurityStore((state) => state.addItem);
@@ -19,21 +18,20 @@ export function ProtectedItemsPage() {
   const selectedIds = useSecurityStore((state) => state.selectedIds);
   const setSelection = useSecurityStore((state) => state.setSelection);
   const pushToast = useUiStore((state) => state.pushToast);
-
   const [adding, setAdding] = useState(false);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [showHidden, setShowHidden] = useState(false);
 
   if (!hydrated) return null;
 
+  const hiddenCount = hiddenIds.length;
+  const warningCount = hydrated.items.filter((item) => item.integrityStatus !== "verified").length;
 
   async function handleRescan() {
     try {
       await rescanIntegrity();
     } catch (error) {
-      pushToast({
-        title: "No se pudo revalidar la integridad",
-        description: error instanceof Error ? error.message : String(error),
-        variant: "critical"
-      });
+      pushToast({ title: "No se pudo revalidar", description: error instanceof Error ? error.message : String(error), variant: "critical" });
     }
   }
 
@@ -41,23 +39,16 @@ export function ProtectedItemsPage() {
     try {
       await setItemsLocked(ids, locked);
     } catch (error) {
-      pushToast({
-        title: locked ? "No se pudo bloquear la selección" : "No se pudo desbloquear la selección",
-        description: error instanceof Error ? error.message : String(error),
-        variant: "critical"
-      });
+      pushToast({ title: "No se pudo actualizar", description: error instanceof Error ? error.message : String(error), variant: "critical" });
     }
   }
 
   async function handleRemove(ids: string[]) {
     try {
       await removeItems(ids);
+      setHiddenIds((current) => current.filter((id) => !ids.includes(id)));
     } catch (error) {
-      pushToast({
-        title: "No se pudieron quitar los elementos",
-        description: error instanceof Error ? error.message : String(error),
-        variant: "critical"
-      });
+      pushToast({ title: "No se pudieron quitar", description: error instanceof Error ? error.message : String(error), variant: "critical" });
     }
   }
 
@@ -66,26 +57,8 @@ export function ProtectedItemsPage() {
     try {
       const files = await pickFiles();
       for (const path of files) {
-        await addItem({
-          path,
-          kind: "file",
-          protectionLevel: "strict"
-        });
+        await addItem({ path, kind: "file", protectionLevel: "strict" });
       }
-
-      if (files.length) {
-        pushToast({
-          title: "Activos agregados",
-          description: `${files.length} archivo(s) incorporados al inventario protegido.`,
-          variant: "success"
-        });
-      }
-    } catch (error) {
-      pushToast({
-        title: "No se pudieron agregar archivos",
-        description: error instanceof Error ? error.message : String(error),
-        variant: "critical"
-      });
     } finally {
       setAdding(false);
     }
@@ -96,57 +69,55 @@ export function ProtectedItemsPage() {
     try {
       const path = await pickDirectory();
       if (!path) return;
-
-      await addItem({
-        path,
-        kind: "directory",
-        protectionLevel: "isolation"
-      });
-
-      pushToast({
-        title: "Carpeta protegida",
-        description: path,
-        variant: "success"
-      });
-    } catch (error) {
-      pushToast({
-        title: "No se pudo agregar la carpeta",
-        description: error instanceof Error ? error.message : String(error),
-        variant: "critical"
-      });
+      await addItem({ path, kind: "directory", protectionLevel: "isolation" });
     } finally {
       setAdding(false);
     }
   }
 
+  function handleToggleHidden(ids: string[], hidden: boolean) {
+    setHiddenIds((current) => (hidden ? Array.from(new Set([...current, ...ids])) : current.filter((id) => !ids.includes(id))));
+  }
+
+  const visibleItems = showHidden ? hydrated.items : hydrated.items.filter((item) => !hiddenIds.includes(item.id));
+
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={t.pages.protectedEyebrow}
-        title={t.pages.protectedTitle}
-        description={t.pages.protectedDescription}
+        eyebrow="Activos"
+        title="Activos protegidos"
+        description="Vista simple del inventario y su estado."
         actions={
           <>
-            <Button variant="secondary" icon={Upload} onClick={() => void handleAddFiles()} disabled={adding || busy}>
-              {t.actions.addFiles}
-            </Button>
-            <Button variant="secondary" icon={FolderPlus} onClick={() => void handleAddDirectory()} disabled={adding || busy}>
-              {t.actions.addFolder}
-            </Button>
-            <Button icon={RefreshCcw} onClick={() => void handleRescan()} disabled={busy}>
-              {t.actions.rescan}
-            </Button>
+            <ActionButton onClick={() => void handleAddFiles()} disabled={adding || busy}>Agregar</ActionButton>
+            <ActionButton emphasis="subtle" icon={FolderPlus} onClick={() => void handleAddDirectory()} disabled={adding || busy}>Carpeta</ActionButton>
+            <ActionButton emphasis="subtle" icon={RefreshCcw} onClick={() => void handleRescan()} disabled={busy}>Revalidar</ActionButton>
           </>
         }
       />
 
+      <div className="grid gap-4 xl:grid-cols-3 md:grid-cols-2">
+        <MetricItem icon={Upload} iconTone="neutral" label="Activos" value={hydrated.items.length} state="OK" stateTone="green" />
+        <MetricItem icon={FolderPlus} iconTone="neutral" label="Ocultos" value={hiddenCount} state={hiddenCount ? "Activo" : "Vacío"} stateTone={hiddenCount ? "yellow" : "neutral"} />
+        <MetricItem icon={RefreshCcw} iconTone="neutral" label="Con cambios" value={warningCount} state={warningCount ? "Atender" : "OK"} stateTone={warningCount ? "yellow" : "green"} />
+      </div>
+
+      <div className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-soft)]">
+        <span>Ocultos</span>
+        <button type="button" className="text-[var(--text)]" onClick={() => setShowHidden((value) => !value)}>{showHidden ? "Cerrar" : "Abrir"}</button>
+      </div>
+
       <ProtectedItemsTable
-        items={hydrated.items}
+        items={visibleItems}
+        events={hydrated.events}
         selectedIds={selectedIds}
+        hiddenIds={hiddenIds}
         busy={busy}
         onSelectionChange={setSelection}
         onToggleLock={(ids, locked) => void handleToggle(ids, locked)}
+        onToggleHidden={handleToggleHidden}
         onRemove={(ids) => void handleRemove(ids)}
+        onOpenHistory={(path) => pushToast({ title: "Historial", description: path, variant: "info" })}
       />
     </div>
   );

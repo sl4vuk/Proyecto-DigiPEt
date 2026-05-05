@@ -8,6 +8,7 @@ import type {
   RegisterCameraEventInput,
   RotatePinInput,
   SetupPinInput,
+  SystemInfoPayload,
   TerminalCommandResult,
   TerminalStatus,
   UpdateSettingsInput
@@ -74,27 +75,48 @@ export function getTerminalStatus() {
 }
 
 export function runTerminalCommand(command: string) {
-  return invoke<TerminalCommandResult>("run_terminal_command", { command });
+  return invoke<TerminalCommandResult>("run_terminal_command", { command }).then((result) => ({
+    ...result,
+    exitCode: result.exitCode ?? (result as any).exit_code ?? 0,
+  }));
+}
+
+export function getSystemInfo() {
+  return invoke<SystemInfoPayload>("get_system_info");
+}
+
+export function getNetworkInfo() {
+  return invoke<SystemInfoPayload>("get_network_info");
+}
+
+export function getCurrentUser() {
+  return invoke<string>("get_current_user");
+}
+
+export function getHostname() {
+  return invoke<string>("get_hostname");
+}
+
+export function getOsInfo() {
+  return invoke<string>("get_os_info");
+}
+
+export function getLocalIp() {
+  return invoke<string>("get_local_ip");
+}
+
+export function getMacAddresses() {
+  return invoke<string[]>("get_mac_addresses");
 }
 
 export async function pickFiles() {
-  const selected = await open({
-    title: "Selecciona archivos para proteger",
-    multiple: true,
-    directory: false
-  });
-
+  const selected = await open({ title: "Selecciona archivos para proteger", multiple: true, directory: false });
   if (!selected) return [];
   return Array.isArray(selected) ? selected : [selected];
 }
 
 export async function pickDirectory() {
-  const selected = await open({
-    title: "Selecciona una carpeta para proteger",
-    multiple: false,
-    directory: true
-  });
-
+  const selected = await open({ title: "Selecciona una carpeta para proteger", multiple: false, directory: true });
   if (!selected) return null;
   return Array.isArray(selected) ? selected[0] : selected;
 }
@@ -103,11 +125,6 @@ export async function pickExportDestination() {
   return save({
     title: "Exportar historial de DigiPET",
     defaultPath: "digipet-security-events.json",
-    filters: [
-      {
-        name: "JSON",
-        extensions: ["json"]
-      }
-    ]
+    filters: [{ name: "JSON", extensions: ["json"] }]
   });
 }

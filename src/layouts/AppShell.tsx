@@ -4,16 +4,16 @@ import { TopBar } from "@/components/layout/TopBar";
 
 export function AppShell() {
   return (
-    <div className="min-h-dvh bg-[var(--bg)] text-[var(--text)]">
-      <div className="mx-auto flex min-h-dvh max-w-[1680px] flex-col gap-4 p-3 lg:p-4 xl:flex-row">
-        <Sidebar />
-        <main className="flex min-w-0 flex-1 flex-col gap-5">
+    <div className="flex h-dvh min-h-dvh overflow-hidden bg-[var(--app-bg)] text-[var(--text)]">
+      <Sidebar />
+      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="mx-auto flex min-h-full w-full max-w-[1280px] flex-col px-6 pb-10 pt-2 lg:px-8 xl:px-10">
           <TopBar />
-          <div className="min-h-[calc(100dvh-8rem)] rounded-[32px] border border-[var(--border)] bg-[var(--panel)] p-4 shadow-[var(--shadow)] sm:p-5 lg:p-6">
+          <div className="mt-7 min-w-0 flex-1">
             <Outlet />
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

@@ -1,14 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, ScanFace, ShieldAlert, VideoOff } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { ActionButton } from "@/components/security/ActionButton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import {
-  checkCameraAvailability,
-  requestCameraStream,
-  stopCameraStream
-} from "@/services/camera-service";
+import { checkCameraAvailability, requestCameraStream, stopCameraStream } from "@/services/camera-service";
 import { useSecurityStore } from "@/store/security-store";
 import { useUiStore } from "@/store/ui-store";
 
@@ -21,7 +15,6 @@ export function CameraPanel() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [availability, setAvailability] = useState<string>("Comprobando webcam...");
   const [available, setAvailable] = useState(false);
-  const [calibrated, setCalibrated] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [arming, setArming] = useState(false);
 
@@ -52,11 +45,7 @@ export function CameraPanel() {
       const description = error instanceof Error ? error.message : "No se pudo iniciar la webcam.";
       setAvailability(description);
       setAvailable(false);
-      pushToast({
-        title: "No se pudo abrir la webcam",
-        description,
-        variant: "critical"
-      });
+      pushToast({ title: "No se pudo abrir la webcam", description, variant: "critical" });
     }
   }
 
@@ -70,122 +59,40 @@ export function CameraPanel() {
     try {
       await registerCameraEvent({
         title: "Evento de vigilancia registrado",
-        description:
-          "Se generó un incidente manual desde el módulo de cámara para validar la tubería de respuesta.",
+        description: "Se generó un incidente manual desde el módulo de cámara.",
         severity: "warning",
-        detectedGesture: calibrated ? "custom-calibrated" : "unrecognized",
+        detectedGesture: "test",
         suspectedIntrusion: true
       });
-      pushToast({
-        title: "Incidente visual registrado",
-        description: "El evento quedó incorporado al historial local.",
-        variant: "success"
-      });
-    } catch (error) {
-      pushToast({
-        title: "No se pudo registrar el evento",
-        description: error instanceof Error ? error.message : String(error),
-        variant: "critical"
-      });
+      pushToast({ title: "Evento registrado", description: "Se agregó al historial local.", variant: "success" });
     } finally {
       setArming(false);
     }
   }
 
-  const statusBadge = useMemo(() => {
-    if (!enabled) return <Badge variant="neutral">módulo apagado</Badge>;
-    if (!available) return <Badge variant="warning">sin webcam</Badge>;
-    if (!calibrated) return <Badge variant="info">listo para calibrar</Badge>;
-    return <Badge variant="success">pipeline armado</Badge>;
-  }, [available, calibrated, enabled]);
+  const status = useMemo(() => (!enabled ? "Apagado" : !available ? "Sin webcam" : stream ? "Activa" : "Lista"), [available, enabled, stream]);
 
-  if (!enabled) {
-    return (
-      <EmptyState
-        icon={Camera}
-        title="El módulo de cámara está desactivado"
-        description="Actívalo en ajustes para habilitar pruebas locales, calibración y eventos listos para integrar MediaPipe o un motor biométrico real."
-      />
-    );
-  }
-
-  if (!available) {
-    return (
-      <EmptyState
-        icon={VideoOff}
-        title="No hay webcam disponible"
-        description={availability}
-      />
-    );
-  }
+  if (!enabled) return <EmptyState icon={Camera} title="Cámara desactivada" description="Actívala en Ajustes cuando la necesites." />;
+  if (!available) return <EmptyState icon={VideoOff} title="Sin webcam disponible" description={availability} />;
 
   return (
-    <Card
-      title="Cámara y gestos"
-      description="Preview desacoplado del core seguro, con espacio de integración para biometría o gestos."
-      actions={statusBadge}
-    >
-      <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--field)] shadow-[var(--shadow-soft)]">
-          {stream ? (
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="aspect-video h-full w-full object-cover"
-            />
-          ) : (
-            <div className="grid aspect-video place-items-center">
-              <div className="text-center">
-                <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] text-[var(--text)]">
-                  <Camera aria-hidden="true" className="h-6 w-6" />
-                </div>
-                <p className="mt-4 font-medium">Vista previa detenida</p>
-                <p className="mt-2 text-sm text-[var(--text-soft)]">
-                  La webcam queda disponible bajo demanda.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--field)] p-4">
-            <p className="text-sm font-medium">Estado detectado</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">{availability}</p>
-          </div>
-
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--field)] p-4">
-            <p className="text-sm font-medium">Fase de integración</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
-              El panel ya resuelve acceso a webcam, estado, pruebas manuales y registro de
-              incidentes. El próximo paso es conectar detección de rostro, manos o gestos sobre
-              este contenedor visual.
-            </p>
-          </div>
-
-          <div className="grid gap-3">
-            <Button variant="primary" icon={Camera} onClick={() => void startPreview()}>
-              Iniciar preview
-            </Button>
-            <Button variant="secondary" icon={ScanFace} onClick={() => setCalibrated(true)}>
-              Calibrar perfil visual
-            </Button>
-            <Button
-              variant="secondary"
-              icon={ShieldAlert}
-              onClick={() => void simulateAlert()}
-              disabled={arming}
-            >
-              {arming ? "Registrando..." : "Simular incidente"}
-            </Button>
-            <Button variant="ghost" onClick={() => void stopPreview()}>
-              Detener preview
-            </Button>
-          </div>
+    <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="overflow-hidden rounded-[28px] bg-[var(--surface)]">
+        {stream ? (
+          <video ref={videoRef} autoPlay muted playsInline className="aspect-video h-full w-full object-cover" />
+        ) : (
+          <div className="grid aspect-video place-items-center text-sm text-[var(--text-soft)]">Preview inactiva</div>
+        )}
+      </div>
+      <div className="space-y-4">
+        <div className="rounded-[24px] bg-[var(--surface)] px-4 py-4 text-sm text-[var(--text-soft)]">Estado: <span className="text-[var(--text)]">{status}</span></div>
+        <div className="grid gap-3">
+          <ActionButton icon={Camera} onClick={() => void startPreview()}>Iniciar preview</ActionButton>
+          <ActionButton emphasis="subtle" icon={ScanFace} onClick={() => pushToast({ title: "Detección", description: "Modo de prueba listo.", variant: "info" })}>Probar detección</ActionButton>
+          <ActionButton emphasis="subtle" icon={ShieldAlert} onClick={() => void simulateAlert()} disabled={arming}>{arming ? "Registrando..." : "Calibrar"}</ActionButton>
+          {stream ? <ActionButton emphasis="subtle" onClick={() => void stopPreview()}>Detener</ActionButton> : null}
         </div>
       </div>
-    </Card>
+    </div>
   );
 }

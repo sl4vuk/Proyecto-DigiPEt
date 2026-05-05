@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+.git
+.env
+.env.*
+dist
+build
+.cache
+.vscode
+.idea
+*.log
+coverage
+__pycache__
+*.pyc
+.DS_Store
+Thumbs.db

@@ -5,6 +5,7 @@ mod integrity;
 mod models;
 mod security;
 mod storage;
+mod system_info;
 
 use app_state::AppState;
 
@@ -29,6 +30,13 @@ fn main() {
             commands::register_camera_event,
             commands::trigger_emergency_lock,
             commands::export_security_events,
+            commands::get_system_info,
+            commands::get_network_info,
+            commands::get_current_user,
+            commands::get_hostname,
+            commands::get_os_info,
+            commands::get_local_ip,
+            commands::get_mac_addresses,
             commands::terminal_status,
             commands::run_terminal_command
         ])

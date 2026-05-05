@@ -1,8 +1,8 @@
 {
-  "$schema": "../gen/schemas/desktop-schema.json",
+  "$schema": "https://schema.tauri.app/config/2",
   "productName": "DigiPET",
   "version": "0.1.0",
-  "identifier": "com.digipet.desktop",
+  "identifier": "com.digipet.secure-desktop-companion",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
@@ -12,32 +12,30 @@
   "app": {
     "windows": [
       {
-        "label": "main",
         "title": "DigiPET",
-        "width": 1540,
-        "height": 980,
-        "minWidth": 1200,
-        "minHeight": 760,
+        "width": 1360,
+        "height": 860,
+        "minWidth": 980,
+        "minHeight": 680,
         "resizable": true,
-        "maximized": false,
-        "visible": true
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false
       }
     ],
     "security": {
-      "capabilities": ["main-capability"]
+      "csp": null
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["msi", "nsis"],
-    "shortDescription": "Plataforma DigiPET de monitoreo y seguridad local para escritorio.",
-    "longDescription": "DigiPET es una aplicación de escritorio con Tauri 2, React y Rust para proteger archivos, auditar eventos locales, monitorear integridad y operar un núcleo seguro con identidad visual propia.",
-    "windows": {
-      "digestAlgorithm": "sha256",
-      "wix": {
-        "language": "es-ES"
-      }
-    },
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/icon.ico"]
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
   }
 }

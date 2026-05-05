@@ -1,0 +1,9 @@
+services:
+  proyecto-digipet:
+    build: .
+    container_name: proyecto-digipet
+    ports:
+      - "3005:3000"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production

@@ -1,8 +1,9 @@
 # ⚡ DigiPET
+
 <p align="center">
-	<a href="https://github.com/sl4vuk/Proyecto-DigiPEt" target="_blank">
-   		<img src="https://github.com/sl4vuk/Proyecto-DigiPEt/blob/main/public/d3538367-1c42-42cc-a8f1-cd365bc9c9d9.png?raw=true">
-	</a>
+  <a href="https://github.com/sl4vuk/Proyecto-DigiPEt" target="_blank">
+    <img src="https://github.com/sl4vuk/Proyecto-DigiPEt/blob/main/public/d3538367-1c42-42cc-a8f1-cd365bc9c9d9.png?raw=true" alt="DigiPET">
+  </a>
 </p>
 
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=for-the-badge&logo=github&color=%230567ff)](https://github.com/sl4vuk/Proyecto-DigiPEt/releases/latest)
@@ -12,60 +13,115 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Web Oficial](https://img.shields.io/badge/Web-Oficial-blue?style=for-the-badge&logo=wechat&logoColor=white)](https://digipet-sentinel.lovable.app)
 
-> DigiPET es una aplicación de escritorio para protección local de archivos, monitoreo seguro, auditoría e integridad, construida con **Tauri 2**, **React 19**, **TypeScript 5**, **Vite** y un núcleo en **Rust**.
+> DigiPET es una aplicación de escritorio para protección local de archivos, monitoreo seguro, auditoría e integridad, construida con **Tauri 2**, **React 19**, **TypeScript**, **Vite** y un núcleo seguro en **Rust**.
 
 ---
 
 ## 📦 Stack Tecnológico
 
-| Tecnología | Versión | Rol |
-|---|---|---|
-| Tauri | 2.x | Shell nativo de escritorio |
-| React | 19.1 | Interfaz de usuario |
-| TypeScript | 5.9 | Tipado estático |
-| Vite | 7.x | Bundler y dev server |
-| Tailwind CSS | 4.x | Sistema de estilos |
-| Zustand | 5.x | Gestión de estado |
-| Framer Motion | 12.x | Animaciones |
-| Lucide Icons | 0.542 | Iconografía |
-| Rust | stable | Núcleo criptográfico |
+| Tecnología | Rol |
+|---|---|
+| Tauri 2 | Shell nativo de escritorio |
+| React 19 | Interfaz de usuario |
+| TypeScript | Tipado estático |
+| Vite | Bundler y servidor de desarrollo |
+| Tailwind CSS | Sistema de estilos |
+| Zustand | Gestión de estado |
+| Framer Motion | Animaciones sutiles |
+| Lucide Icons | Iconografía |
+| Rust | Núcleo criptográfico y operaciones sensibles |
+| Python | Script principal de arranque y automatización local |
+| Docker | Entorno opcional de ejecución/aislamiento |
 
 ---
 
 ## 🚀 Inicio Rápido
 
-### 1. Instalar prerequisitos
-
-```bat
-dependencis.bat
-```
-
-### 2. Arrancar en modo desarrollo
-
-```bat
-dev.bat
-```
-
-### 3. (Alternativo) Comandos npm
+### 1. Instalar dependencias del proyecto
 
 ```bash
-npm install          # instalar dependencias
-npm run tauri dev    # modo desarrollo con hot-reload
-npm run tauri build  # compilar release
+npm install
+```
+
+### 2. Usar el script principal del proyecto
+
+```bash
+python digipet.py
+```
+
+`digipet.py` es el punto de entrada recomendado para trabajar con el proyecto. Centraliza tareas de desarrollo, ejecución, diagnóstico, limpieza y automatización local.
+
+### 3. Ejecutar Tauri manualmente
+
+```bash
+npm run tauri dev
+```
+
+### 4. Compilar la aplicación
+
+```bash
+npm run tauri build
 ```
 
 > [!TIP]
-> Usa `dev.bat` en lugar de los comandos npm directamente — incluye panel de control interactivo con diagnóstico, logs, limpieza y reintentos automáticos.
+> Usa `python digipet.py` como flujo principal cuando estés trabajando en Windows. Los scripts auxiliares deben vivir dentro de `scripts/`, no dispersos en la raíz.
 
 ---
 
-## 🗂️ Scripts incluidos
+## 🗂️ Estructura actual del proyecto
 
-| Archivo | Descripción |
-|---|---|
-| `dependencis.bat` | Instala Node LTS, Rustup, Build Tools y dependencias del proyecto en Windows |
-| `dev.bat` | Panel de control para desarrollo: diagnóstico, logs, limpieza y reintentos |
-| `run.bat` | Inicia DigiPET en desarrollo usando el comando principal del proyecto |
+```text
+Proyecto DigiPEt
+│
+├── .agent/                  ← Configuración local de agentes
+├── .agents/                 ← Configuración adicional de agentes/herramientas
+├── .codex/                  ← Configuración para flujos con Codex
+├── dist/                    ← Build generado del frontend
+├── logs/                    ← Logs locales del proyecto
+├── node_modules/            ← Dependencias instaladas de Node
+├── public/                  ← Assets públicos de la app
+├── scripts/                 ← Scripts auxiliares del proyecto
+├── src/                     ← Frontend React + TypeScript
+├── src-tauri/               ← Backend Tauri/Rust
+│
+├── .dockerignore            ← Exclusiones para Docker
+├── .gitignore               ← Exclusiones de Git
+├── AGENTS.md                ← Reglas para agentes y asistentes de código
+├── CLAUDE.md                ← Arquitectura y convenciones técnicas
+├── digipet.py               ← Script principal de control del proyecto
+├── docker-compose.yml       ← Orquestación Docker opcional
+├── Dockerfile               ← Imagen Docker del proyecto
+├── index.html               ← Entrada HTML usada por Vite
+├── LICENSE                  ← Licencia MIT
+├── package-lock.json        ← Lockfile de dependencias npm
+├── package.json             ← Scripts y dependencias Node/Tauri
+├── README.md                ← Documentación principal
+├── RESUME.md                ← Resumen funcional y de producto
+├── skills-lock.json         ← Lockfile/configuración de skills
+├── tsconfig.json            ← Configuración TypeScript
+├── tsconfig.node.json       ← Configuración TypeScript para Node/Vite
+└── vite.config.ts           ← Configuración de Vite
+```
+
+---
+
+## 🧭 Organización recomendada
+
+### Raíz del proyecto
+
+Debe mantenerse limpia. En la raíz solo deben quedar archivos de configuración, documentación, manifests y el script principal `digipet.py`.
+
+### `scripts/`
+
+Debe contener scripts auxiliares como tareas de instalación, limpieza, diagnóstico, build, mantenimiento o automatización. Si un script no es el punto de entrada principal, debe ir aquí.
+
+### `src/`
+
+Contiene la interfaz React/TypeScript: pantallas, componentes, hooks, store, servicios, estilos y tipos compartidos.
+
+### `src-tauri/`
+
+Contiene el backend Rust/Tauri: comandos IPC, seguridad, cifrado, persistencia, integridad, auditoría, capacidades e iconos nativos.
 
 ---
 
@@ -74,81 +130,86 @@ npm run tauri build  # compilar release
 ```text
 DigiPET
 │
-├── /src                      ← Frontend React + TypeScript
-│   ├── /app                  ← Inicialización y providers
-│   ├── /components           ← Componentes reutilizables
-│   ├── /features             ← Módulos de funcionalidad
-│   ├── /hooks                ← Custom hooks
-│   ├── /layouts              ← Estructuras de página
-│   ├── /lib                  ← Utilitarios y helpers
-│   ├── /pages                ← Vistas/rutas principales
-│   ├── /services             ← Comunicación con Tauri
-│   ├── /store                ← Estado global (Zustand)
-│   ├── /styles               ← Tokens y estilos globales
-│   └── /types                ← Tipos TypeScript compartidos
+├── src                       ← Frontend React + TypeScript
+│   ├── app                   ← Inicialización y providers
+│   ├── components            ← Componentes reutilizables
+│   ├── features              ← Módulos de funcionalidad
+│   ├── hooks                 ← Custom hooks
+│   ├── layouts               ← Estructuras de página
+│   ├── lib                   ← Utilitarios y helpers
+│   ├── pages                 ← Vistas/rutas principales
+│   ├── services              ← Comunicación con Tauri
+│   ├── store                 ← Estado global
+│   ├── styles                ← Tokens y estilos globales
+│   └── types                 ← Tipos compartidos
 │
-└── /src-tauri                ← Backend Rust
-    ├── /capabilities         ← Permisos de Tauri
-    ├── /icons                ← Iconos de la app
-    └── /src
-        ├── app_state.rs      ← Estado de la aplicación
-        ├── commands.rs       ← Comandos IPC expuestos
-        ├── error.rs          ← Tipos de error unificados
-        ├── integrity.rs      ← Verificación de integridad
-        ├── models.rs         ← Estructuras de datos
-        ├── security.rs       ← Lógica criptográfica
-        └── storage.rs        ← Persistencia cifrada
+└── src-tauri                 ← Backend Rust
+    ├── capabilities          ← Permisos de Tauri
+    ├── icons                 ← Iconos nativos de la app
+    └── src                   ← Código Rust del núcleo seguro
 ```
 
 ---
 
 ## 🔐 Núcleo de Seguridad
 
-- 🔒 Bóveda local cifrada con **AES-256-GCM**
-- 🧂 Clave derivada desde el PIN con **Argon2id**
-- 🛡️ Hash seguro de credencial maestra
-- 🧠 Sesión en memoria, desmontada al bloquear
-- 📋 Inventario de activos protegidos con integridad local
-- 🔑 Bloqueo y desbloqueo lógico mediante atributos de solo lectura
-- 📜 Registro de eventos de seguridad exportable a **JSON**
-- ⏱️ Política de auto-bloqueo y umbral de intentos fallidos
-- 📷 Módulo de cámara desacoplado y listo para inferencia biométrica real
+- 🔒 Bóveda local cifrada.
+- 🧂 Clave derivada desde el PIN con Argon2id.
+- 🛡️ Hash seguro de credencial maestra.
+- 🧠 Sesión en memoria, desmontada al bloquear.
+- 📋 Inventario de activos protegidos con verificación de integridad.
+- 🔑 Bloqueo y desbloqueo lógico de archivos y carpetas.
+- 📜 Registro de eventos de seguridad exportable a JSON.
+- ⏱️ Auto-bloqueo y umbral de intentos fallidos.
+- 📷 Módulo visual desacoplado y preparado para cámara, gestos o biometría futura.
 
 > [!NOTE]
-> DigiPET no incluye secretos hardcodeados. Todas las claves se derivan en tiempo de ejecución y nunca se persisten en texto plano.
+> DigiPET no debe incluir secretos hardcodeados. Las claves se derivan en tiempo de ejecución y nunca se persisten en texto plano.
 
 ---
 
 ## 🎬 Flujo de Demo Recomendado
 
-1. Ejecuta `dependencis.bat` para preparar el entorno
-2. Ejecuta `dev.bat` y elige la opción de **desarrollo**
-3. Crea tu **PIN maestro** en el primer arranque
-4. Agrega archivos o carpetas a la bóveda
-5. Ejecuta un **escaneo de integridad**
-6. Abre incidentes y exporta los **logs de seguridad**
+1. Abre una terminal en la raíz del proyecto.
+2. Ejecuta `npm install` si es la primera vez o si cambió `package-lock.json`.
+3. Ejecuta `python digipet.py` para abrir el flujo principal de trabajo.
+4. Inicia el entorno de desarrollo desde el script o con `npm run tauri dev`.
+5. Crea tu PIN maestro en el primer arranque.
+6. Agrega archivos o carpetas protegidas.
+7. Ejecuta un escaneo de integridad.
+8. Revisa eventos recientes y exporta los logs de seguridad.
 
 > [!IMPORTANT]
-> Guarda tu PIN maestro en un lugar seguro. No existe mecanismo de recuperación por diseño — esto es intencional para maximizar la seguridad.
+> Guarda tu PIN maestro en un lugar seguro. No existe mecanismo de recuperación por diseño.
+
+---
+
+## 🐳 Docker opcional
+
+El proyecto incluye `Dockerfile`, `.dockerignore` y `docker-compose.yml` para flujos opcionales de aislamiento o automatización.
+
+```bash
+docker compose up --build
+```
+
+> [!WARNING]
+> Docker no reemplaza el flujo nativo de Tauri en Windows. Úsalo solo si el script o la tarea que estás ejecutando lo requiere.
 
 ---
 
 ## 💡 Tips y Consejos
 
 > [!TIP]
-> **Rendimiento en desarrollo:** Si el hot-reload de Tauri es lento, prueba a correr `npm run dev` por separado (solo Vite) para iterar en la UI sin el proceso Rust.
+> **Flujo recomendado:** usa `python digipet.py` para tareas habituales y deja `npm run tauri dev` como alternativa directa.
 
 > [!TIP]
-> **Debug del núcleo Rust:** Agrega `RUST_LOG=debug` como variable de entorno antes de `npm run tauri dev` para ver logs detallados del backend.
+> **Limpieza:** si la app se comporta de forma extraña tras cambios de estructura, limpia artefactos generados en `dist/`, caché de Vite o builds de Rust desde el flujo del script principal.
 
 > [!TIP]
-> **Limpieza de caché:** Si la app se comporta de forma extraña tras un cambio de estructura, usa la opción **Limpiar** en `dev.bat` para borrar el caché de Vite y los artefactos de Rust.
+> **Rust debug:** puedes usar `RUST_LOG=debug` antes de iniciar Tauri para inspeccionar el backend.
 
 > [!TIP]
-> **Extensibilidad visual:** El módulo de cámara está preparado para integrar **MediaPipe**, **OpenCV** o cualquier motor biométrico sin reescribir el core. Solo implementa el trait correspondiente en `src-tauri/src`.
-
-> [!WARNING]
-> No ejecutes `npm run tauri build` en modo de desarrollo sin antes hacer `npm install` limpio. Una instalación corrupta puede generar binarios inseguros.
+> **Estructura:** nuevos scripts auxiliares deben agregarse en `scripts/`; nuevos módulos de UI en `src/`; nuevas operaciones sensibles en `src-tauri/`.
 
 ---
 
@@ -158,23 +219,15 @@ DigiPET
 [![GitHub Issues](https://img.shields.io/badge/Reportar%20Bug-GitHub%20Issues-red?style=for-the-badge&logo=github)](https://github.com/sl4vuk/Proyecto-DigiPEt/issues)
 [![GitHub Discussions](https://img.shields.io/badge/Preguntas-Discussions-blueviolet?style=for-the-badge&logo=github)](https://github.com/sl4vuk/Proyecto-DigiPEt/discussions)
 
-- 🌐 Visita nuestra **[Web Oficial](https://digipet-sentinel.lovable.app)** para más información
-- 🐛 Para bugs y sugerencias, abre un **Issue** en GitHub
-- ⭐ Si el proyecto te es útil, deja una **estrella** en el repositorio
-
----
-
-## 🏅 Contribuidores
-
-¡Gracias a todos los que dedican tiempo a hacer crecer este proyecto! 🍻
-
-[![Contributors](https://contrib.rocks/image?repo=sl4vuk/Proyecto-DigiPEt)](https://github.com/sl4vuk/Proyecto-DigiPEt/graphs/contributors)
+- 🌐 Visita la **Web Oficial** para más información.
+- 🐛 Para bugs y sugerencias, abre un Issue en GitHub.
+- ⭐ Si el proyecto te es útil, deja una estrella en el repositorio.
 
 ---
 
 ## 📄 Licencia
 
-Distribuido bajo la licencia **MIT**. Consulta el archivo `LICENSE` para más detalles.
+Distribuido bajo la licencia **MIT**. Consulta `LICENSE` para más detalles.
 
 ---
 

@@ -1,125 +1,199 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-DigiPET -- Smart TUI Launcher
-Single-script installer, runner, builder and cleaner for Tauri / npm projects.
-Compatible with Windows CP850/CP437 terminals and modern UTF-8 terminals.
+DigiPET - Smart TUI Launcher v3.2
+Clean terminal interface for the Tauri project.
 """
 
 import curses
-import subprocess
-import shutil
-import sys
-import os
 import glob
-import time
+import io
+import os
+import platform
+import shutil
+import socket
+import subprocess
+import sys
 import threading
+import time
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-#  FORCE UTF-8 OUTPUT ON WINDOWS  (must happen before curses starts)
-# ---------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Windows console setup
+# -----------------------------------------------------------------------------
 if sys.platform == "win32":
-    import ctypes
-    # Set console code page to UTF-8
-    ctypes.windll.kernel32.SetConsoleOutputCP(65001)
-    ctypes.windll.kernel32.SetConsoleCP(65001)
-    # Enable VT / ANSI processing
-    kernel = ctypes.windll.kernel32
-    handle = kernel.GetStdHandle(-11)
-    mode   = ctypes.c_ulong()
-    kernel.GetConsoleMode(handle, ctypes.byref(mode))
-    kernel.SetConsoleMode(handle, mode.value | 0x0004)
-    # Reconfigure stdout/stderr to UTF-8
-    import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+    try:
+        import ctypes
 
-# ---------------------------------------------------------------------------
-#  COLOR PAIR IDs
-# ---------------------------------------------------------------------------
-P_NORMAL   = 1
-P_ACCENT   = 2
-P_WARN     = 3
-P_ERR      = 4
-P_OK       = 5
-P_SELECTED = 6
-P_DIM      = 7
-P_BANNER   = 8
-P_BORDER   = 9
-P_TITLE    = 10
+        ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+        ctypes.windll.kernel32.SetConsoleCP(65001)
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.GetStdHandle(-11)
+        mode = ctypes.c_ulong()
+        if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+            kernel32.SetConsoleMode(handle, mode.value | 0x0004)
+    except Exception:
+        pass
 
-def init_colors():
+    try:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+
+# -----------------------------------------------------------------------------
+# Theme
+# -----------------------------------------------------------------------------
+P_NORMAL  = 1
+P_DIM     = 2
+P_REVERSE = 3
+P_ACCENT  = 4
+P_SUCCESS = 5
+P_ERROR   = 6
+P_WARN    = 7
+P_BOX     = 8
+P_LABEL   = 9
+
+
+def init_theme() -> None:
     curses.start_color()
     try:
         curses.use_default_colors()
         bg = -1
     except Exception:
         bg = curses.COLOR_BLACK
-    curses.init_pair(P_NORMAL,   curses.COLOR_WHITE,   bg)
-    curses.init_pair(P_ACCENT,   curses.COLOR_CYAN,    bg)
-    curses.init_pair(P_WARN,     curses.COLOR_YELLOW,  bg)
-    curses.init_pair(P_ERR,      curses.COLOR_RED,     bg)
-    curses.init_pair(P_OK,       curses.COLOR_GREEN,   bg)
-    curses.init_pair(P_SELECTED, curses.COLOR_BLACK,   curses.COLOR_CYAN)
+
+    curses.init_pair(P_NORMAL,  curses.COLOR_WHITE,  bg)
     try:
-        curses.init_pair(P_DIM, 8, bg)   # dark grey (bright black)
+        curses.init_pair(P_DIM, 8, bg)
     except Exception:
         curses.init_pair(P_DIM, curses.COLOR_WHITE, bg)
-    curses.init_pair(P_BANNER,   curses.COLOR_MAGENTA, bg)
-    curses.init_pair(P_BORDER,   curses.COLOR_CYAN,    bg)
-    curses.init_pair(P_TITLE,    curses.COLOR_WHITE,   bg)
+    curses.init_pair(P_REVERSE, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair(P_ACCENT,  curses.COLOR_CYAN,   bg)
+    curses.init_pair(P_SUCCESS, curses.COLOR_GREEN,  bg)
+    curses.init_pair(P_ERROR,   curses.COLOR_RED,    bg)
+    curses.init_pair(P_WARN,    curses.COLOR_YELLOW, bg)
+    curses.init_pair(P_BOX,     curses.COLOR_CYAN,   bg)
+    curses.init_pair(P_LABEL,   curses.COLOR_MAGENTA,bg)
 
-# ---------------------------------------------------------------------------
-#  BANNER  -- pure 7-bit ASCII, zero box-drawing chars
-# ---------------------------------------------------------------------------
+
+def attr_normal(extra: int = 0)  -> int: return curses.color_pair(P_NORMAL)  | extra
+def attr_dim(extra: int = 0)     -> int: return curses.color_pair(P_DIM)     | extra
+def attr_reverse(extra: int = 0) -> int: return curses.color_pair(P_REVERSE) | extra
+def attr_accent(extra: int = 0)  -> int: return curses.color_pair(P_ACCENT)  | extra
+def attr_success(extra: int = 0) -> int: return curses.color_pair(P_SUCCESS) | extra
+def attr_error(extra: int = 0)   -> int: return curses.color_pair(P_ERROR)   | extra
+def attr_warn(extra: int = 0)    -> int: return curses.color_pair(P_WARN)    | extra
+def attr_box(extra: int = 0)     -> int: return curses.color_pair(P_BOX)     | extra
+def attr_label(extra: int = 0)   -> int: return curses.color_pair(P_LABEL)   | extra
+
+
+# -----------------------------------------------------------------------------
+# System info
+# -----------------------------------------------------------------------------
+def short_path(path: str, max_len: int = 76) -> str:
+    if len(path) <= max_len:
+        return path
+    return "..." + path[-(max_len - 3):]
+
+
+def get_system_info() -> dict[str, str]:
+    try:
+        host = socket.gethostname()
+    except Exception:
+        host = "unknown"
+
+    user = os.environ.get("USERNAME") or os.environ.get("USER") or "unknown"
+
+    try:
+        os_name = f"{platform.system()} {platform.release()} {platform.machine()}"
+    except Exception:
+        os_name = "unknown"
+
+    try:
+        cwd = short_path(str(Path.cwd()))
+    except Exception:
+        cwd = "."
+
+    try:
+        py_version = f"Python {platform.python_version()}"
+    except Exception:
+        py_version = "Python unknown"
+
+    return {
+        "os":   os_name,
+        "user": f"{user}@{host}",
+        "dir":  cwd,
+        "py":   py_version,
+    }
+
+
+SYS_INFO     = get_system_info()
+VERSION      = "v3.2"
+APP_SUBTITLE = f"TAURI PROJECT SMART LAUNCHER  {VERSION}"
+
+# Banner — uses only block characters (safe on any UTF-8 terminal)
 BANNER_LINES = [
-    r"  ########  ####  ######   ####  ########  ########  ########",
-    r"  ##     ##  ##  ##    ##  ##  ##  ##      ##           ##   ",
-    r"  ##     ##  ##  ##        ######  ######  ######       ##   ",
-    r"  ##     ##  ##  ##    ##  ##  ##  ##      ##           ##   ",
-    r"  ########  ####  ######   ##  ##  ##      ########     ##   ",
+    "██████  ██  ██████  ██ ██████  ███████ ████████",
+    "██   ██ ██ ██       ██ ██   ██ ██         ██   ",
+    "██   ██ ██ ██   ███ ██ ██████  █████      ██   ",
+    "██   ██ ██ ██    ██ ██ ██      ██         ██   ",
+    "██████  ██  ██████  ██ ██      ███████    ██   ",
 ]
-SUBTITLE = "[ TAURI PROJECT SMART LAUNCHER  v2.1 ]"
 
-# ---------------------------------------------------------------------------
-#  MENU
-# ---------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Actions and menu  (no numbers, no commands — only brief descriptions)
+# -----------------------------------------------------------------------------
 class Action:
     DEPS   = "deps"
     RUN    = "run"
     BUILD  = "build"
+    UPDATE = "update"
     CLEAN  = "clean"
     DEEP   = "deep"
     DOCTOR = "doctor"
     QUIT   = "quit"
 
+
+# (action, label, description)
 MENU_ITEMS = [
-    (Action.DEPS,   "  [1]  Install Dependencies",         "winget + Node + Rust + VS BuildTools + WebView2"),
-    (Action.RUN,    "  [2]  Run in Dev Mode",              "npm run tauri dev  --  hot reload enabled"),
-    (Action.BUILD,  "  [3]  Build Release  (.exe)",        "tauri build  ->  DigiPET_Portable/DigiPET.exe"),
-    (Action.CLEAN,  "  [4]  Smart Clean",                  "logs, temp files, stale build artifacts"),
-    (Action.DEEP,   "  [5]  Deep Clean  (+ node_modules)", "full reset -- removes node_modules & Cargo cache"),
-    (Action.DOCTOR, "  [6]  Environment Doctor",           "check all tools and report status"),
-    (Action.QUIT,   "  [7]  Exit",                         "bye o/"),
+    (Action.DEPS,   "Install Dependencies",  "Set up the full Windows toolchain and project packages"),
+    (Action.RUN,    "Run Dev Mode",           "Launch the Tauri development server with hot-reload"),
+    (Action.BUILD,  "Build Release",          "Compile a portable release executable"),
+    (Action.UPDATE, "Update Packages",        "Refresh npm and Cargo dependency versions"),
+    (Action.CLEAN,  "Smart Clean",            "Remove build artifacts, logs and temp files"),
+    (Action.DEEP,   "Deep Clean",             "Wipe dependency caches — reinstall required after"),
+    (Action.DOCTOR, "Environment Doctor",     "Verify all required tools are present and healthy"),
+    (Action.QUIT,   "Exit",                   "Close the launcher"),
 ]
 
-# ---------------------------------------------------------------------------
-#  HELPERS
-# ---------------------------------------------------------------------------
-def run_cmd(cmd: str):
-    """Return (returncode, output_str)."""
+TASK_LABEL = {action: label for action, label, _desc in MENU_ITEMS}
+
+
+# -----------------------------------------------------------------------------
+# Shell helpers
+# -----------------------------------------------------------------------------
+def run_cmd(cmd: str) -> tuple[int, str]:
     proc = subprocess.run(
-        cmd, shell=True,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        text=True, encoding="utf-8", errors="replace"
+        cmd,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     return proc.returncode, (proc.stdout or "").strip()
+
 
 def cmd_exists(name: str) -> bool:
     return shutil.which(name) is not None
 
-def safe_remove(path):
+
+def safe_remove(path: str | Path) -> None:
     p = Path(path)
     try:
         if p.is_file() or p.is_symlink():
@@ -129,554 +203,663 @@ def safe_remove(path):
     except Exception:
         pass
 
-# ---------------------------------------------------------------------------
-#  SAFE DRAW
-# ---------------------------------------------------------------------------
-def safe_addstr(win, y, x, text, attr=0):
-    """addstr that never raises."""
+
+# -----------------------------------------------------------------------------
+# Safe drawing helpers
+# -----------------------------------------------------------------------------
+def safe_addstr(win, y: int, x: int, text: str, attr: int = 0) -> None:
     try:
         max_y, max_x = win.getmaxyx()
-        if y < 0 or y >= max_y - 1 or x < 0:
+        if y < 0 or y >= max_y or x < 0 or x >= max_x:
             return
-        avail = max_x - x - 1
-        if avail <= 0:
+        available = max_x - x - 1
+        if available <= 0:
             return
-        win.addstr(y, x, text[:avail], attr)
-    except (curses.error, UnicodeEncodeError, ValueError):
+        win.addstr(y, x, str(text)[:available], attr)
+    except Exception:
         pass
 
-def draw_border(win):
-    """Plain ASCII border -- safe on every Windows code page."""
-    try:
-        h, w = win.getmaxyx()
-        attr = curses.color_pair(P_BORDER) | curses.A_BOLD
-        safe_addstr(win, 0,     0,     "+", attr)
-        safe_addstr(win, 0,     w - 1, "+", attr)
-        safe_addstr(win, h - 1, 0,     "+", attr)
-        safe_addstr(win, h - 1, w - 1, "+", attr)
-        safe_addstr(win, 0,     1, "-" * (w - 2), attr)
-        safe_addstr(win, h - 1, 1, "-" * (w - 2), attr)
-        for row in range(1, h - 1):
-            safe_addstr(win, row, 0,     "|", attr)
-            safe_addstr(win, row, w - 1, "|", attr)
-    except curses.error:
-        pass
 
-def draw_hline(win, y, color_pair):
-    try:
-        _, w = win.getmaxyx()
-        safe_addstr(win, y, 1, "-" * (w - 2), curses.color_pair(color_pair))
-    except curses.error:
-        pass
+def hline(win, y: int, x: int, width: int, ch: str = "─", attr: int = 0) -> None:
+    safe_addstr(win, y, x, ch * max(0, width), attr)
 
-# ---------------------------------------------------------------------------
-#  BANNER DRAW
-# ---------------------------------------------------------------------------
-def draw_banner(win, start_y: int) -> int:
-    _, w = win.getmaxyx()
-    for i, line in enumerate(BANNER_LINES):
-        x = max(1, (w - len(line)) // 2)
-        safe_addstr(win, start_y + i, x, line,
-                    curses.color_pair(P_BANNER) | curses.A_BOLD)
-    sub_y = start_y + len(BANNER_LINES) + 1
-    sx = max(1, (w - len(SUBTITLE)) // 2)
-    safe_addstr(win, sub_y, sx, SUBTITLE,
-                curses.color_pair(P_ACCENT) | curses.A_BOLD)
-    return sub_y + 2
 
-# ---------------------------------------------------------------------------
-#  MENU DRAW
-# ---------------------------------------------------------------------------
-def draw_menu(win, items, selected, top_y):
-    _, w = win.getmaxyx()
-    for i, (action, label, desc) in enumerate(items):
-        y = top_y + i * 2
-        is_sel = (i == selected)
-        if is_sel:
-            safe_addstr(win, y, 2, " " * (w - 4),
-                        curses.color_pair(P_SELECTED) | curses.A_BOLD)
-            safe_addstr(win, y, 2, label,
-                        curses.color_pair(P_SELECTED) | curses.A_BOLD)
-            safe_addstr(win, y, 42, "| " + desc,
-                        curses.color_pair(P_DIM) | curses.A_BOLD)
-        else:
-            if action == Action.QUIT:
-                lattr = curses.color_pair(P_ERR) | curses.A_BOLD
-            elif action in (Action.CLEAN, Action.DEEP):
-                lattr = curses.color_pair(P_WARN) | curses.A_BOLD
-            elif action == Action.DOCTOR:
-                lattr = curses.color_pair(P_ACCENT) | curses.A_BOLD
-            else:
-                lattr = curses.color_pair(P_NORMAL) | curses.A_BOLD
-            safe_addstr(win, y, 2, label, lattr)
-            safe_addstr(win, y, 42, "| " + desc, curses.color_pair(P_DIM))
-
-# ---------------------------------------------------------------------------
-#  TASK GENERATORS  (yield ("kind", "message"))
-# ---------------------------------------------------------------------------
-def task_deps():
-    yield ("info", "Checking winget...")
-    if not cmd_exists("winget"):
-        yield ("err", "winget not found -- run on Windows 10/11 with App Installer")
+def draw_box(win, y: int, x: int, h: int, w: int, title: str = "") -> None:
+    if h < 3 or w < 4:
         return
-    yield ("ok", "winget detected")
+    attr = attr_box()
+    safe_addstr(win, y,         x, "╔" + "═" * (w - 2) + "╗", attr)
+    for row in range(1, h - 1):
+        safe_addstr(win, y + row, x,         "║", attr)
+        safe_addstr(win, y + row, x + w - 1, "║", attr)
+    safe_addstr(win, y + h - 1, x, "╚" + "═" * (w - 2) + "╝", attr)
+    if title:
+        safe_addstr(win, y, x + 2, f" {title} ", attr_accent(curses.A_BOLD))
 
-    for bin_name, pkg_id in [("node", "OpenJS.NodeJS.LTS"), ("rustc", "Rustlang.Rustup")]:
-        if cmd_exists(bin_name):
-            yield ("ok", f"{bin_name} already installed")
+
+def center_text(win, y: int, text: str, attr: int = 0) -> None:
+    _, w = win.getmaxyx()
+    x = max(0, (w - len(text)) // 2)
+    safe_addstr(win, y, x, text, attr)
+
+
+# -----------------------------------------------------------------------------
+# Log prefixes  (safe Unicode — no multi-codepoint sequences or emoji)
+# -----------------------------------------------------------------------------
+# Arrow alternatives that work on Windows consoles with UTF-8:
+#   skip    ->  >>  (plain ASCII, always safe)
+#   running ->  >>  (same, accent colored)
+#   install ->  vv  (downward hint, plain ASCII)
+#   remove  ->  ^^  (upward hint, plain ASCII)
+# Checkmark / cross use the simplest forms.
+PREFIX = {
+    "ok":      "\u2713",   # ✓
+    "error":   "\u2715",   # ✕
+    "warn":    "!",
+    "info":    "\u25cf",   # ●
+    "skip":    ">>",
+    "install": "vv",
+    "remove":  "^^",
+    "running": ">>",
+}
+
+SPINNER = ["\u280b", "\u2819", "\u2839", "\u2838", "\u283c",
+           "\u2834", "\u2826", "\u2827", "\u2807", "\u280f"]
+
+
+def attr_for_kind(kind: str) -> int:
+    if kind == "ok":
+        return attr_success(curses.A_BOLD)
+    if kind == "error":
+        return attr_error(curses.A_BOLD)
+    if kind == "warn":
+        return attr_warn(curses.A_BOLD)
+    if kind == "skip":
+        return attr_dim(curses.A_BOLD)
+    if kind in ("install", "remove", "running"):
+        return attr_accent(curses.A_BOLD)
+    return attr_accent(curses.A_BOLD)
+
+
+# -----------------------------------------------------------------------------
+# Screens
+# -----------------------------------------------------------------------------
+def draw_header(win) -> int:
+    _, width = win.getmaxyx()
+    y = 1
+
+    for line in BANNER_LINES:
+        center_text(win, y, line, attr_accent(curses.A_BOLD))
+        y += 1
+
+    y += 1
+    center_text(win, y, APP_SUBTITLE, attr_dim(curses.A_BOLD))
+    y += 2
+
+    box_w = min(88, max(48, width - 8))
+    box_x = max(0, (width - box_w) // 2)
+    draw_box(win, y, box_x, 6, box_w, "SYSTEM")
+    fields = [
+        ("OS",   SYS_INFO["os"]),
+        ("USER", SYS_INFO["user"]),
+        ("DIR",  SYS_INFO["dir"]),
+        ("PY",   SYS_INFO["py"]),
+    ]
+    for idx, (key, value) in enumerate(fields):
+        safe_addstr(win, y + 1 + idx, box_x + 3, f"{key:<5}", attr_accent(curses.A_BOLD))
+        safe_addstr(win, y + 1 + idx, box_x + 8, ":", attr_dim())
+        safe_addstr(win, y + 1 + idx, box_x + 10, value, attr_normal())
+
+    return y + 7
+
+
+def draw_menu(win, selected: int, top_y: int) -> None:
+    height, width = win.getmaxyx()
+    menu_w = min(100, max(68, width - 16))
+    menu_h = len(MENU_ITEMS) + 6
+    menu_x = max(0, (width - menu_w) // 2)
+    draw_box(win, top_y, menu_x, menu_h, menu_w, "ACTIONS")
+
+    # Column headers
+    header_y = top_y + 2
+    safe_addstr(win, header_y, menu_x + 5,  "ACTION",      attr_accent(curses.A_BOLD))
+    safe_addstr(win, header_y, menu_x + 34, "DESCRIPTION", attr_accent(curses.A_BOLD))
+    hline(win, header_y + 1, menu_x + 2, menu_w - 4, "─", attr_box())
+
+    for idx, (_action, label, desc) in enumerate(MENU_ITEMS):
+        row_y  = header_y + 2 + idx
+        is_sel = idx == selected
+
+        if is_sel:
+            # Highlight entire row
+            safe_addstr(win, row_y, menu_x + 1, " " * (menu_w - 2), attr_reverse(curses.A_BOLD))
+            safe_addstr(win, row_y, menu_x + 3, "\u25b8",            attr_reverse(curses.A_BOLD))  # ▸
+            safe_addstr(win, row_y, menu_x + 5, f"{label:<28}",      attr_reverse(curses.A_BOLD))
+            safe_addstr(win, row_y, menu_x + 34, desc[:menu_w - 38], attr_reverse(curses.A_BOLD))
         else:
-            yield ("info", f"Installing {pkg_id}...")
+            safe_addstr(win, row_y, menu_x + 5,  f"{label:<28}", attr_normal())
+            safe_addstr(win, row_y, menu_x + 34,  desc[:menu_w - 38], attr_dim())
+
+    # Footer description of selected item
+    desc_y = min(height - 3, top_y + menu_h + 1)
+    safe_addstr(win, desc_y, 2, MENU_ITEMS[selected][2], attr_dim())
+
+
+def draw_footer(win) -> None:
+    height, width = win.getmaxyx()
+    if height < 4:
+        return
+    hline(win, height - 2, 0, width - 1, "─", attr_box())
+    hint = "UP/DOWN or K/J : navigate    ENTER : select    ESC/Q : exit"
+    center_text(win, height - 1, hint[: width - 1], attr_dim())
+
+
+def draw_main(stdscr, selected: int) -> None:
+    stdscr.erase()
+    height, width = stdscr.getmaxyx()
+    if height < 22 or width < 76:
+        safe_addstr(stdscr, 1, 2, "DigiPET Launcher", attr_normal(curses.A_BOLD))
+        safe_addstr(stdscr, 3, 2, "Increase the terminal size for the full interface.", attr_dim())
+        draw_footer(stdscr)
+        stdscr.refresh()
+        return
+
+    top = draw_header(stdscr)
+    draw_menu(stdscr, selected, top)
+    draw_footer(stdscr)
+    stdscr.refresh()
+
+
+def draw_message_screen(stdscr, title: str, lines: list[str], pause: bool = True) -> None:
+    stdscr.erase()
+    height, width = stdscr.getmaxyx()
+    box_w = min(88, max(50, width - 10))
+    box_h = min(max(8, len(lines) + 5), height - 4)
+    y = max(0, (height - box_h) // 2)
+    x = max(0, (width - box_w) // 2)
+    draw_box(stdscr, y, x, box_h, box_w, title)
+
+    max_lines = box_h - 4
+    for i, line in enumerate(lines[:max_lines]):
+        safe_addstr(stdscr, y + 2 + i, x + 3, line[: box_w - 6], attr_normal())
+
+    if pause:
+        safe_addstr(stdscr, y + box_h - 2, x + 3, "Press any key to continue...", attr_dim())
+    stdscr.refresh()
+    if pause:
+        stdscr.nodelay(False)
+        stdscr.getch()
+        stdscr.nodelay(True)
+
+
+# -----------------------------------------------------------------------------
+# Task screen
+# -----------------------------------------------------------------------------
+def run_task_screen(stdscr, action: str) -> None:
+    label = TASK_LABEL.get(action, action)
+    logs: list[tuple[str, str]] = []
+    done = False
+
+    def worker() -> None:
+        nonlocal done
+        try:
+            for item in TASKS[action]():
+                logs.append(item)
+        except Exception as exc:
+            logs.append(("error", f"Task crashed: {exc}"))
+        finally:
+            done = True
+
+    thread = threading.Thread(target=worker, daemon=True)
+    thread.start()
+
+    while True:
+        stdscr.erase()
+        height, width = stdscr.getmaxyx()
+        title  = f"TASK  {label}"
+        box_w  = max(60, width - 6)
+        box_h  = max(10, height - 4)
+        draw_box(stdscr, 1, 3, box_h, box_w, title)
+
+        log_y       = 3
+        max_visible = box_h - 6
+        visible     = logs[-max_visible:]
+        for i, (kind, message) in enumerate(visible):
+            visual_kind = kind
+            lower_msg   = message.lower()
+            if kind == "info" and "install" in lower_msg:
+                visual_kind = "install"
+            elif kind == "info" and ("running" in lower_msg or "starting" in lower_msg):
+                visual_kind = "running"
+            elif kind == "info" and ("removing" in lower_msg or "clean" in lower_msg):
+                visual_kind = "remove"
+            prefix = PREFIX.get(visual_kind, "\u25cf")
+            safe_addstr(stdscr, log_y + i, 6,  prefix,              attr_for_kind(visual_kind))
+            safe_addstr(stdscr, log_y + i, 10, message[: width - 14], attr_normal())
+
+        status_y = min(height - 3, 1 + box_h - 2)
+        if done:
+            safe_addstr(stdscr, status_y, 6,
+                        "\u2713 Finished. Press any key to return.",
+                        attr_success(curses.A_BOLD))
+        else:
+            spin = SPINNER[int(time.time() * 10) % len(SPINNER)]
+            safe_addstr(stdscr, status_y, 6,
+                        f"{spin}  Running. Please wait...",
+                        attr_accent(curses.A_BOLD))
+
+        stdscr.refresh()
+
+        if done:
+            thread.join(timeout=0.1)
+            stdscr.nodelay(False)
+            stdscr.getch()
+            stdscr.nodelay(True)
+            return
+
+        time.sleep(0.12)
+
+
+# -----------------------------------------------------------------------------
+# Confirm dialog
+# -----------------------------------------------------------------------------
+def confirm_dialog(stdscr, title: str, message: str) -> bool:
+    selected = 0
+    buttons  = ["Continue", "Cancel"]
+
+    while True:
+        stdscr.erase()
+        height, width = stdscr.getmaxyx()
+        box_w = min(76, max(52, width - 10))
+        box_h = 10
+        y = max(0, (height - box_h) // 2)
+        x = max(0, (width  - box_w) // 2)
+        draw_box(stdscr, y, x, box_h, box_w, title)
+
+        words: list[str] = message.split()
+        lines: list[str] = []
+        current = ""
+        for word in words:
+            if len(current) + len(word) + 1 > box_w - 8:
+                lines.append(current)
+                current = word
+            else:
+                current = (current + " " + word).strip()
+        if current:
+            lines.append(current)
+
+        for i, line in enumerate(lines[:4]):
+            safe_addstr(stdscr, y + 2 + i, x + 4, line, attr_normal())
+
+        btn_y    = y + box_h - 3
+        first_x  = x + 10
+        second_x = x + 28
+        for i, button in enumerate(buttons):
+            bx   = first_x if i == 0 else second_x
+            text = f"  {button}  "
+            if selected == i:
+                safe_addstr(stdscr, btn_y, bx, text, attr_reverse(curses.A_BOLD))
+            else:
+                safe_addstr(stdscr, btn_y, bx, text, attr_normal())
+
+        safe_addstr(stdscr, y + box_h - 1, x + 4,
+                    "LEFT/RIGHT: choose    ENTER: confirm    ESC/Q: cancel",
+                    attr_dim())
+        stdscr.refresh()
+
+        key = stdscr.getch()
+        if key in (curses.KEY_LEFT, curses.KEY_RIGHT, ord("\t")):
+            selected = 1 - selected
+        elif key in (curses.KEY_ENTER, ord("\n"), ord("\r")):
+            return selected == 0
+        elif key in (27, ord("q"), ord("Q")):
+            return False
+
+
+# -----------------------------------------------------------------------------
+# Task generators
+# -----------------------------------------------------------------------------
+def task_deps():
+    yield ("info", "Checking winget")
+    if not cmd_exists("winget"):
+        yield ("error", "winget not found. Windows 10/11 with App Installer is required")
+        return
+
+    yield ("ok", "winget found")
+
+    for bin_name, package_id in [("node", "OpenJS.NodeJS.LTS"), ("rustc", "Rustlang.Rustup")]:
+        if cmd_exists(bin_name):
+            yield ("skip", f"{bin_name} already installed")
+        else:
+            yield ("info", f"Installing {package_id}")
             rc, out = run_cmd(
-                f"winget install -e --id {pkg_id} "
-                f"--accept-package-agreements --accept-source-agreements"
+                f"winget install -e --id {package_id} --accept-package-agreements --accept-source-agreements"
             )
             if rc == 0:
-                yield ("ok", f"{pkg_id} installed")
+                yield ("ok", f"{package_id} installed")
             else:
-                yield ("warn", f"{pkg_id} may need manual install: {out[:100]}")
+                yield ("warn", f"{package_id} may need manual install: {out[:180]}")
 
     if cmd_exists("rustup"):
-        yield ("info", "Setting Rust toolchain to stable-msvc...")
+        yield ("info", "Setting Rust toolchain to stable-msvc")
         run_cmd("rustup default stable-msvc")
-        yield ("ok", "Rust toolchain: stable-msvc")
+        yield ("ok", "Rust toolchain ready")
     else:
-        yield ("err", "rustup not found -- restart terminal and retry")
+        yield ("error", "rustup not found. Restart terminal and retry")
         return
 
-    yield ("info", "Checking VS Build Tools...")
+    yield ("info", "Checking Visual Studio Build Tools")
     rc, _ = run_cmd("winget list -e --id Microsoft.VisualStudio.2022.BuildTools")
     if rc != 0:
-        yield ("info", "Installing VS Build Tools (may take several minutes)...")
+        yield ("info", "Installing Visual Studio Build Tools. This can take several minutes")
         run_cmd(
-            "winget install -e --id Microsoft.VisualStudio.2022.BuildTools "
-            "--accept-package-agreements --accept-source-agreements "
+            'winget install -e --id Microsoft.VisualStudio.2022.BuildTools '
+            '--accept-package-agreements --accept-source-agreements '
             '--override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools"'
         )
-    yield ("ok", "VS Build Tools ready")
+    yield ("ok", "Visual Studio Build Tools ready")
 
-    yield ("info", "Checking WebView2 Runtime...")
+    yield ("info", "Checking WebView2 Runtime")
     rc, _ = run_cmd("winget list -e --id Microsoft.EdgeWebView2Runtime")
     if rc != 0:
-        run_cmd("winget install -e --id Microsoft.EdgeWebView2Runtime "
-                "--accept-package-agreements --accept-source-agreements")
+        run_cmd(
+            "winget install -e --id Microsoft.EdgeWebView2Runtime "
+            "--accept-package-agreements --accept-source-agreements"
+        )
     yield ("ok", "WebView2 Runtime ready")
 
     if not Path("node_modules").exists():
-        yield ("info", "Running npm install...")
+        yield ("info", "Running npm install")
         rc, out = run_cmd("npm install")
         if rc == 0:
             yield ("ok", "npm install complete")
         else:
-            yield ("err", f"npm install failed: {out[:300]}")
+            yield ("error", f"npm install failed: {out[:300]}")
             return
     else:
-        yield ("ok", "node_modules already present")
+        yield ("skip", "node_modules already present")
 
-    yield ("ok", "--- All dependencies ready ---")
+    yield ("ok", "All dependencies are ready")
 
 
 def task_run():
-    """Preflight only -- actual launch is done in main() after curses.endwin()."""
-    yield ("info", "Verifying environment before launch...")
+    yield ("info", "Verifying environment")
     for tool in ("node", "npm", "cargo"):
         if cmd_exists(tool):
             yield ("ok", f"{tool} found")
         else:
-            yield ("err", f"{tool} not found -- run Install Dependencies first")
+            yield ("error", f"{tool} not found. Run Install Dependencies first")
             return
+
     if not Path("package.json").exists():
-        yield ("err", "package.json missing -- run from project root")
+        yield ("error", "package.json missing. Run from the project root")
         return
     if not Path("node_modules").exists():
-        yield ("warn", "node_modules missing -- run Install Dependencies first")
-        return
-    yield ("ok", "Environment OK -- launching dev server now...")
-
-
-def task_build():
-    yield ("info", "Pre-build smart clean...")
-    yield from _do_smart_clean()
-    yield ("info", "Starting Tauri release build...")
-    yield ("accent", "CMD: npm exec -- tauri build")
-    rc, out = run_cmd("npm exec -- tauri build")
-    if rc != 0:
-        for line in out.splitlines()[-25:]:
-            yield ("err", line)
-        yield ("err", "Build FAILED -- see output above")
+        yield ("warn", "node_modules missing. Run Install Dependencies first")
         return
 
-    exe_files = glob.glob("src-tauri/target/release/*.exe")
-    if not exe_files:
-        yield ("err", "No .exe found in src-tauri/target/release/")
-        return
-
-    out_dir = Path("DigiPET_Portable")
-    if out_dir.exists():
-        shutil.rmtree(out_dir)
-    out_dir.mkdir()
-    dest = out_dir / "DigiPET.exe"
-    shutil.copy(exe_files[0], dest)
-    mb = dest.stat().st_size / 1_048_576
-    yield ("ok", f"Executable -> {dest}  ({mb:.1f} MB)")
-    yield ("ok", "--- Build complete ---")
+    yield ("ok", "Environment ready")
+    yield ("info", "The Tauri dev server will start after this check")
 
 
-def _do_smart_clean():
+def smart_clean_generator():
     removed = 0
     patterns = [
         "src-tauri/target/release/build",
         "src-tauri/target/release/deps",
         "src-tauri/target/release/incremental",
         "src-tauri/target/debug",
-        "dist", ".vite",
-        "*.log", "**/*.log",
-        ".DS_Store", "**/.DS_Store",
-        "Thumbs.db", "**/Thumbs.db",
+        "dist",
+        ".vite",
+        "*.log",
+        "**/*.log",
+        ".DS_Store",
+        "**/.DS_Store",
+        "Thumbs.db",
+        "**/Thumbs.db",
         ".env.local",
-        "__pycache__", "**/__pycache__",
-        "*.pyc", "**/*.pyc",
+        "__pycache__",
+        "**/__pycache__",
+        "*.pyc",
+        "**/*.pyc",
     ]
-    for pat in patterns:
-        for match in glob.glob(pat, recursive=True):
-            safe_remove(match)
-            yield ("ok", f"Removed: {match}")
-            removed += 1
 
-    for f in Path(".").iterdir():
-        if (f.is_file()
-                and f.stat().st_size == 0
-                and f.suffix not in (".ts", ".js", ".json", ".toml")):
+    for pattern in patterns:
+        for match in glob.glob(pattern, recursive=True):
+            safe_remove(match)
+            removed += 1
+            yield ("ok", f"Removed {match}")
+
+    for item in Path(".").iterdir():
+        if item.is_file() and item.stat().st_size == 0 and item.suffix not in (".ts", ".js", ".json", ".toml"):
             try:
-                f.unlink()
-                yield ("ok", f"Removed empty: {f}")
+                item.unlink()
                 removed += 1
+                yield ("ok", f"Removed empty {item}")
             except Exception:
                 pass
 
-    yield ("ok", f"Smart clean done -- {removed} items removed")
+    yield ("ok", f"Smart clean done. {removed} items removed")
 
 
 def task_clean():
-    yield ("info", "Running Smart Clean...")
-    yield from _do_smart_clean()
+    yield ("info", "Running smart clean")
+    yield from smart_clean_generator()
+
+
+def task_build():
+    yield ("info", "Pre-build smart clean")
+    yield from smart_clean_generator()
+
+    yield ("info", "Starting Tauri release build")
+    rc, out = run_cmd("npm exec -- tauri build")
+    if rc != 0:
+        for line in out.splitlines()[-25:]:
+            yield ("error", line)
+        yield ("error", "Build failed. See output above")
+        return
+
+    exe_files = glob.glob("src-tauri/target/release/*.exe")
+    if not exe_files:
+        yield ("error", "No .exe found in src-tauri/target/release")
+        return
+
+    out_dir = Path("DigiPET_Portable")
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+    out_dir.mkdir()
+
+    dest    = out_dir / "DigiPET.exe"
+    shutil.copy(exe_files[0], dest)
+    size_mb = dest.stat().st_size / 1_048_576
+    yield ("ok", f"Executable: {dest} ({size_mb:.1f} MB)")
+    yield ("ok", "Build complete")
+
+
+def task_update():
+    yield ("info", "Updating npm packages")
+    if not Path("package.json").exists():
+        yield ("warn", "package.json not found. Skipping npm update")
+    else:
+        rc, out = run_cmd("npm update")
+        if rc == 0:
+            yield ("ok", "npm packages updated")
+        else:
+            yield ("warn", f"npm update reported issues: {out[:200]}")
+
+        yield ("info", "Running npm audit fix")
+        rc, _ = run_cmd("npm audit fix")
+        if rc == 0:
+            yield ("ok", "npm audit fix complete")
+        else:
+            yield ("warn", "npm audit fix had warnings. Check manually")
+
+    if cmd_exists("cargo"):
+        if cmd_exists("rustup"):
+            yield ("info", "Updating Rust toolchain")
+            rc, out = run_cmd("rustup update")
+            if rc == 0:
+                yield ("ok", "Rust toolchain updated")
+            else:
+                yield ("warn", f"rustup update reported issues: {out[:120]}")
+
+        if Path("src-tauri/Cargo.toml").exists():
+            yield ("info", "Updating Cargo dependencies")
+            rc, out = run_cmd("cargo update --manifest-path src-tauri/Cargo.toml")
+            if rc == 0:
+                yield ("ok", "Cargo dependencies updated")
+            else:
+                yield ("warn", f"cargo update reported issues: {out[:120]}")
+        else:
+            yield ("skip", "src-tauri/Cargo.toml not found. Skipping Cargo update")
+    else:
+        yield ("skip", "cargo not found. Skipping Rust updates")
+
+    yield ("ok", "Package update finished")
 
 
 def task_deep_clean():
-    yield ("warn", "Deep Clean: removing node_modules and Cargo caches!")
-    yield from _do_smart_clean()
-    for p in [
+    yield ("warn", "Deep clean removes node_modules and Cargo caches")
+    yield from smart_clean_generator()
+
+    targets = [
         "node_modules",
         "src-tauri/target",
         str(Path.home() / ".cargo" / "registry" / "cache"),
-    ]:
-        pp = Path(p)
-        if pp.exists():
-            yield ("info", f"Removing {pp} ...")
-            shutil.rmtree(pp, ignore_errors=True)
-            yield ("ok", f"Removed {pp}")
+    ]
+    for target in targets:
+        path = Path(target)
+        if path.exists():
+            yield ("info", f"Removing {path}")
+            shutil.rmtree(path, ignore_errors=True)
+            yield ("ok", f"Removed {path}")
         else:
-            yield ("dim", f"Not found (skip): {pp}")
-    yield ("ok", "--- Deep clean complete -- re-run Install Dependencies before next use ---")
+            yield ("skip", f"Not found: {path}")
+
+    yield ("ok", "Deep clean complete. Run Install Dependencies before next use")
 
 
 def task_doctor():
-    yield ("info", "Environment Doctor running...")
+    yield ("info", "Environment Doctor")
     checks = [
-        ("node",   "Node.js",   "node --version"),
-        ("npm",    "npm",       "npm --version"),
-        ("rustc",  "Rust",      "rustc --version"),
-        ("cargo",  "Cargo",     "cargo --version"),
-        ("rustup", "Rustup",    "rustup --version"),
-        ("git",    "Git",       "git --version"),
-        ("winget", "Winget",    "winget --version"),
+        ("node",   "Node.js", "node --version"),
+        ("npm",    "npm",     "npm --version"),
+        ("rustc",  "Rust",    "rustc --version"),
+        ("cargo",  "Cargo",   "cargo --version"),
+        ("rustup", "Rustup",  "rustup --version"),
+        ("git",    "Git",     "git --version"),
+        ("winget", "Winget",  "winget --version"),
     ]
-    for bin_name, label, ver_cmd in checks:
-        if cmd_exists(bin_name):
-            _, ver = run_cmd(ver_cmd)
-            ver = ver.split("\n")[0][:45]
-            yield ("ok",  f"{label:<18} {ver}")
-        else:
-            yield ("err", f"{label:<18} NOT FOUND")
 
-    yield ("info", "Checking project structure...")
-    for f in ["package.json", "src-tauri/tauri.conf.json", "src-tauri/Cargo.toml"]:
-        if Path(f).exists():
-            yield ("ok",   f"Found   : {f}")
+    for binary, label, command in checks:
+        if cmd_exists(binary):
+            _, version = run_cmd(command)
+            first_line = version.splitlines()[0] if version else "found"
+            yield ("ok", f"{label:<18} {first_line[:60]}")
         else:
-            yield ("warn", f"Missing : {f}")
+            yield ("error", f"{label:<18} NOT FOUND")
+
+    yield ("info", "Checking project structure")
+    for file_path in ["package.json", "src-tauri/tauri.conf.json", "src-tauri/Cargo.toml"]:
+        if Path(file_path).exists():
+            yield ("ok",   f"found   {file_path}")
+        else:
+            yield ("warn", f"missing {file_path}")
 
     if Path("node_modules").exists():
-        yield ("ok",   "node_modules  : present")
+        yield ("ok",   "node_modules present")
     else:
-        yield ("warn", "node_modules  : missing -- run Install Dependencies")
+        yield ("warn", "node_modules missing")
 
-    rc, ver = run_cmd("npm exec -- tauri -V")
+    rc, version = run_cmd("npm exec -- tauri -V")
     if rc == 0:
-        yield ("ok",   f"Tauri CLI     : {ver.strip()}")
+        yield ("ok",   f"Tauri CLI {version.strip()}")
     else:
-        yield ("warn", "Tauri CLI     : not available (install deps first)")
+        yield ("warn", "Tauri CLI not available. Install dependencies first")
 
-    yield ("ok", "--- Doctor check complete ---")
+    yield ("ok", "Doctor check complete")
 
 
-TASK_MAP = {
+TASKS = {
     Action.DEPS:   task_deps,
     Action.RUN:    task_run,
     Action.BUILD:  task_build,
+    Action.UPDATE: task_update,
     Action.CLEAN:  task_clean,
     Action.DEEP:   task_deep_clean,
     Action.DOCTOR: task_doctor,
 }
 
-# ---------------------------------------------------------------------------
-#  LOG SCREEN
-# ---------------------------------------------------------------------------
-LOG_COLOR = {
-    "ok":     P_OK,
-    "err":    P_ERR,
-    "warn":   P_WARN,
-    "info":   P_ACCENT,
-    "dim":    P_DIM,
-    "accent": P_BANNER,
-}
-LOG_PREFIX = {
-    "ok":     "  [OK]  ",
-    "err":    " [ERR]  ",
-    "warn":   "[WARN]  ",
-    "info":   "[INFO]  ",
-    "dim":    "        ",
-    "accent": "  >>>   ",
-}
 
-def run_task_screen(stdscr, action: str, label: str):
-    curses.curs_set(0)
-    logs: list = []
-    done = False
-    spin_frame = 0
-    task_fn = TASK_MAP[action]
+# -----------------------------------------------------------------------------
+# Main loop
+# -----------------------------------------------------------------------------
+def handle_action(stdscr, action: str) -> bool:
+    if action == Action.QUIT:
+        return False
 
-    def worker():
-        nonlocal done
-        for item in task_fn():
-            logs.append(item)
-        done = True
-
-    t = threading.Thread(target=worker, daemon=True)
-    t.start()
-
-    while True:
-        stdscr.erase()
-        h, w = stdscr.getmaxyx()
-        draw_border(stdscr)
-        title = f"  >>  {label}  "
-        safe_addstr(stdscr, 0, 3, title,
-                    curses.color_pair(P_TITLE) | curses.A_BOLD)
-
-        log_h = max(1, h - 6)
-        visible = logs[-log_h:]
-        for i, (kind, msg) in enumerate(visible):
-            pfx   = LOG_PREFIX.get(kind, "        ")
-            color = LOG_COLOR.get(kind, P_NORMAL)
-            safe_addstr(stdscr, 2 + i, 1,
-                        (pfx + msg)[:w - 2],
-                        curses.color_pair(color))
-
-        spin_chars = r"-\|/"
-        if not done:
-            safe_addstr(stdscr, h - 3, 2,
-                        f"  {spin_chars[spin_frame % 4]}  Running...",
-                        curses.color_pair(P_ACCENT) | curses.A_BOLD)
-            spin_frame += 1
+    if action in (Action.DEEP, Action.UPDATE):
+        if action == Action.DEEP:
+            message = "Deep Clean will delete node_modules and Cargo caches. You will need to reinstall dependencies afterwards."
         else:
-            safe_addstr(stdscr, h - 3, 2,
-                        "  [DONE]  Press any key to return",
-                        curses.color_pair(P_OK) | curses.A_BOLD)
+            message = "This will update npm and Cargo dependencies. Some versions may change."
+        if not confirm_dialog(stdscr, "CONFIRM ACTION", message):
+            return True
 
-        safe_addstr(stdscr, h - 1, 2, " DigiPET Launcher ",
-                    curses.color_pair(P_DIM))
-        stdscr.refresh()
-        time.sleep(0.07)
+    if action == Action.RUN:
+        run_task_screen(stdscr, action)
+        curses.endwin()
+        print("\n  >> Starting Tauri dev server. Press Ctrl+C to stop.\n")
+        try:
+            os.system("npm run tauri dev")
+        finally:
+            print("\n  -- Dev server stopped. Press Enter to return...")
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                pass
+            stdscr = curses.initscr()
+            init_theme()
+            curses.curs_set(0)
+            stdscr.keypad(True)
+            stdscr.nodelay(True)
+        return True
 
-        if done:
-            t.join()
-            # final repaint
-            stdscr.erase()
-            h, w = stdscr.getmaxyx()
-            draw_border(stdscr)
-            safe_addstr(stdscr, 0, 3, title,
-                        curses.color_pair(P_TITLE) | curses.A_BOLD)
-            log_h = max(1, h - 6)
-            visible = logs[-log_h:]
-            for i, (kind, msg) in enumerate(visible):
-                pfx   = LOG_PREFIX.get(kind, "        ")
-                color = LOG_COLOR.get(kind, P_NORMAL)
-                safe_addstr(stdscr, 2 + i, 1,
-                            (pfx + msg)[:w - 2],
-                            curses.color_pair(color))
-            safe_addstr(stdscr, h - 3, 2,
-                        "  [DONE]  Press any key to return",
-                        curses.color_pair(P_OK) | curses.A_BOLD)
-            safe_addstr(stdscr, h - 1, 2, " DigiPET Launcher ",
-                        curses.color_pair(P_DIM))
-            stdscr.refresh()
-            stdscr.nodelay(False)
-            stdscr.getch()
-            break
+    run_task_screen(stdscr, action)
+    return True
 
-# ---------------------------------------------------------------------------
-#  CONFIRM DIALOG
-# ---------------------------------------------------------------------------
-def confirm_dialog(stdscr, message: str) -> bool:
-    h, w = stdscr.getmaxyx()
-    dh, dw = 9, min(62, w - 4)
-    dy, dx = max(0, (h - dh) // 2), max(0, (w - dw) // 2)
-    win = curses.newwin(dh, dw, dy, dx)
-    selected = 1   # 0=YES  1=NO
 
-    words = message.split()
-    lines_out, line = [], ""
-    for word in words:
-        if len(line) + len(word) + 1 > dw - 4:
-            lines_out.append(line)
-            line = word
-        else:
-            line = (line + " " + word).strip()
-    if line:
-        lines_out.append(line)
-
-    while True:
-        win.erase()
-        draw_border(win)
-        safe_addstr(win, 0, 3, "  [WARNING] Confirm Action  ",
-                    curses.color_pair(P_WARN) | curses.A_BOLD)
-        for i, l in enumerate(lines_out[:5]):
-            safe_addstr(win, 2 + i, 2, l, curses.color_pair(P_NORMAL))
-
-        btn_y = dh - 2
-        yes_attr = (curses.color_pair(P_SELECTED) | curses.A_BOLD) if selected == 0 else curses.color_pair(P_OK)
-        no_attr  = (curses.color_pair(P_SELECTED) | curses.A_BOLD) if selected == 1 else curses.color_pair(P_ERR)
-        safe_addstr(win, btn_y, 12, "  YES  ", yes_attr)
-        safe_addstr(win, btn_y, 25, "  NO   ", no_attr)
-        win.refresh()
-
-        key = stdscr.getch()
-        if key in (curses.KEY_LEFT, curses.KEY_RIGHT, ord("\t")):
-            selected ^= 1
-        elif key in (curses.KEY_ENTER, ord("\n"), ord("\r")):
-            return selected == 0
-        elif key in (ord("q"), ord("Q"), 27):
-            return False
-
-# ---------------------------------------------------------------------------
-#  STATUS BAR
-# ---------------------------------------------------------------------------
-def draw_status_bar(win, msg: str, color: int):
-    h, w = win.getmaxyx()
-    safe_addstr(win, h - 2, 0, " " * (w - 1), curses.color_pair(color))
-    safe_addstr(win, h - 2, 0, f"  {msg}"[:w - 2], curses.color_pair(color) | curses.A_BOLD)
-    hint = " UP/DOWN Navigate  Enter Select  Q Quit "
-    safe_addstr(win, h - 1, max(0, w - len(hint) - 1), hint, curses.color_pair(P_DIM))
-
-# ---------------------------------------------------------------------------
-#  MAIN LOOP
-# ---------------------------------------------------------------------------
-def main(stdscr):
-    init_colors()
+def main(stdscr) -> None:
+    init_theme()
     curses.curs_set(0)
-    stdscr.nodelay(True)
     stdscr.keypad(True)
+    stdscr.nodelay(True)
 
-    selected   = 0
-    status_msg = "Welcome to DigiPET Launcher  --  use UP/DOWN and Enter"
-    status_col = P_ACCENT
+    selected = 0
 
     while True:
-        stdscr.erase()
-        h, w = stdscr.getmaxyx()
-
-        draw_border(stdscr)
-        content_y = draw_banner(stdscr, 1)
-        draw_hline(stdscr, content_y, P_BORDER)
-        draw_menu(stdscr, MENU_ITEMS, selected, content_y + 1)
-        draw_hline(stdscr, h - 3, P_BORDER)
-        draw_status_bar(stdscr, status_msg, status_col)
-        stdscr.refresh()
-
+        draw_main(stdscr, selected)
         key = stdscr.getch()
         if key == -1:
-            time.sleep(0.03)
+            time.sleep(0.04)
             continue
 
-        if key in (curses.KEY_UP, ord("k")):
-            selected   = (selected - 1) % len(MENU_ITEMS)
-            status_msg = MENU_ITEMS[selected][2]
-            status_col = P_ACCENT
-
-        elif key in (curses.KEY_DOWN, ord("j")):
-            selected   = (selected + 1) % len(MENU_ITEMS)
-            status_msg = MENU_ITEMS[selected][2]
-            status_col = P_ACCENT
-
+        if key in (curses.KEY_UP, ord("k"), ord("K")):
+            selected = (selected - 1) % len(MENU_ITEMS)
+        elif key in (curses.KEY_DOWN, ord("j"), ord("J")):
+            selected = (selected + 1) % len(MENU_ITEMS)
         elif key in (curses.KEY_ENTER, ord("\n"), ord("\r")):
-            action, label, _ = MENU_ITEMS[selected]
-
-            if action == Action.QUIT:
+            action = MENU_ITEMS[selected][0]
+            if not handle_action(stdscr, action):
                 break
-
-            if action == Action.DEEP:
-                stdscr.nodelay(False)
-                ok = confirm_dialog(
-                    stdscr,
-                    "Deep Clean will DELETE node_modules and Cargo caches. "
-                    "You will need to re-run Install Dependencies afterwards. Continue?"
-                )
-                stdscr.nodelay(True)
-                if not ok:
-                    status_msg = "Deep Clean cancelled."
-                    status_col = P_WARN
-                    continue
-
-            if action == Action.RUN:
-                # Run preflight check first (non-interactive task)
-                stdscr.nodelay(False)
-                run_task_screen(stdscr, action, label.strip())
-                stdscr.nodelay(True)
-                # Now hand off to shell
-                curses.endwin()
-                print("\n[DigiPET] Starting Tauri dev server -- press Ctrl+C to stop\n")
-                os.system("npm run tauri dev")
-                print("\n[DigiPET] Dev server stopped. Press Enter to return to launcher...")
-                try:
-                    input()
-                except (EOFError, KeyboardInterrupt):
-                    pass
-                # Reinit curses
-                stdscr = curses.initscr()
-                init_colors()
-                curses.curs_set(0)
-                stdscr.keypad(True)
-                stdscr.nodelay(True)
-                status_msg = "Dev server exited"
-                status_col = P_OK
-            else:
-                stdscr.nodelay(False)
-                run_task_screen(stdscr, action, label.strip())
-                stdscr.nodelay(True)
-                status_msg = f"[OK] {label.strip()} finished"
-                status_col = P_OK
-
-        elif key in (ord("q"), ord("Q"), 27):
+        elif key in (27, ord("q"), ord("Q")):
             break
 
-        # Number shortcuts 1-7
-        for i in range(len(MENU_ITEMS)):
-            if key == ord(str(i + 1)):
-                selected = i
 
-# ---------------------------------------------------------------------------
-#  ENTRY POINT
-# ---------------------------------------------------------------------------
-def entry():
+# -----------------------------------------------------------------------------
+# Entry point
+# -----------------------------------------------------------------------------
+def entry() -> None:
     try:
         curses.wrapper(main)
     except KeyboardInterrupt:
@@ -686,7 +869,7 @@ def entry():
             curses.endwin()
         except Exception:
             pass
-        print(f"\n[DigiPET] Fatal error: {exc}")
+        print(f"\n \u2715 DigiPET fatal error: {exc}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
@@ -695,7 +878,7 @@ def entry():
             curses.endwin()
         except Exception:
             pass
-        print("\n[ DigiPET Launcher ] Goodbye!\n")
+        print("\n  [ DigiPET Launcher ] Goodbye.\n")
 
 
 if __name__ == "__main__":
